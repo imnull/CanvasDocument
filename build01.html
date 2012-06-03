@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+</head>
+
+<body>
+
+<script type="text/javascript">
+
+(function(w){
+
+function _ext(a, b){	// a -> b
+	if(!b) b = {};
+	for(var p in a){
+		b[p] = a[p]
+	}
+	return b;
+}
+
+function CanvasGenericElement(config){
+	this.parent = null;
+	this.children = [];
+	this.image = null;
+	this.config = _ext(config, {
+		x : 0,
+		y : 0,
+		fillStyle : '#CCCCCC',
+		strokeStyle : '#000000',
+		text : '',
+		lineWidth : 0,
+		rotateAngle : 0,
+		scaleX : 1,
+		scaleY : 1,
+		globalAlpha : 1
+	});
+}
+
+CanvasGenericElement.prototype = {
+	each : function(callback){
+		var i = 0, len = this.children.length;
+		for(; i < len; i++){
+			if(callback(this.children[i], i, len)) break;
+		}
+	},
+	append : function(el){
+		if(!this.ownerDocument || !el.ownerDocument || this.ownerDocument !== el.ownerDocument)
+			throw 'Different ownerDocument';
+		if(el.parent) el.parent.remove(el);
+		el.parent = this;
+		this.children.push(el);
+	},
+	removeAt : function(idx){
+		if(idx < 0 || idx >= this.children.length) return;
+		this.children[idx].parent = null;
+		delete this.children[idx].parent;
+		return this.children.splice(idx, 1);
+	},
+	remove : function(el){
+		var idx = -1;
+		this.each(function(_el, i){
+			if(_el === el){
+				idx = i;
+				return true;
+			}
+		});
+		this.removeAt(idx);
+	},
+	clear : function(){
+		this.each(function(el){
+			el.parent = null;
+			delete el.parent;
+		})
+		this.children = [];
+	},
+	hasChild : function(el){
+		var n = el.parent;
+		while(!!n){
+			if(n === this) return true;
+			n = n.parent;
+		}
+		n = null;
+		return false;
+	},
+	draw : function(ctx){
+
+		ctx.save();
+
+		this.path(ctx);
+		this.fill(ctx);
+		this.stroke(ctx);
+		this.text(ctx);
+
+		ctx.restore();
+
+		var i = this.children.length;
+		while(--i >= 0){
+			this.children[i].draw(ctx);
+		}
+	},
+	moveTo : function(x, y){
+		this.config.x = x;
+		this.config.y = y;
+		return this;
+	},
+	scale : function(x, y){
+		this.config.scaleX = x;
+		this.config.scaleY = y;
+		return this;
+	},
+	rotate : function(deg){
+		this.config.rotate = deg * Math.PI / 180;
+		return this;
+	},
+	content : function(str){
+		this.config.text = str;
+		return this;
+	},
+	fill : function(ctx){
+		ctx.fillStyle = this.config.fillStyle;
+		ctx.fill();
+	},
+	stroke : function(ctx){
+		ctx.lineWidth = this.config.lineWidth;
+		ctx.strokeStyle = this.config.strokeStyle;
+		ctx.stroke();
+	},
+	color : function(c){
+		this.config.fillStyle = c;
+		return this;
+	},
+	border : function(w, c){
+		this.config.strokeStyle = c || this.config.strokeStyle;
+		this.config.borderWidth = w || this.config.borderWidth;
+		return this;
+	},
+	opacity : function(v){
+		this.config.globalAlpha = v;
+		return this;
+	},
+	path : function(ctx){ throw 'Notcompliment'; },
+	text : function(ctx){ throw 'Notcompliment'; },
+	check : function(a){ throw 'Notcompliment'; }
+}
+
+function Panel(){
+	CanvasGenericElement.call(this, {
+		width : 100,
+		height : 100
+	});
+	this.path = function(ctx){
+		var h = this.config.width * .5;
+		var v = this.config.height * .5;
+		ctx.translate(this.config.x, this.config.y);
+		ctx.beginPath();
+		ctx.moveTo(-h, -v);
+		ctx.lineTo(h, -v);
+		ctx.lineTo(h, v);
+		ctx.lineTo(-h, v);
+	}
+
+}
+Panel.prototype = new CanvasGenericElement();
+
+function Circle(){
+	CanvasGenericElement.call(this, {
+		radio : 50
+	});
+}
+Circle.prototype = new CanvasGenericElement();
+
+
+function CanvasDocument(id){
+	
+	CanvasGenericElement.call(this, {
+		width : 100,
+		height : 100
+	});
+
+	var cvs = typeof id === 'string' ? document.getElementById(id) : cvs;
+	if(!cvs) cvs = document.createElement('canvas');
+	this.context = cvs.getContext('2d');
+	this.ownerDocument = this;
+}
+CanvasDocument.prototype = new CanvasGenericElement();
+CanvasDocument.prototype.createPanel = function(){
+	var p = new Panel();
+	p.ownerDocument = this;
+	return p;
+}
+
+
+w.CanvasGenericElement = CanvasGenericElement;
+
+w.CanvasDocument = CanvasDocument;
+
+})(window);
+
+var doc = new CanvasDocument();
+
+var b = doc.createPanel();
+
+doc.append(b);
+
+console.log(doc)
+
+
+</script>
+
+
+</body>
+
+
+</html>
