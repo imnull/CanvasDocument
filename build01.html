@@ -36,6 +36,26 @@ function _inherit(name, base, extra, init){
 	return fn;
 }
 
+function cvsEventObject(target){
+	this.hash = {};
+	this.target = target;
+}
+cvsEventObject.prototype = {
+	regist : function(eventName, callback){
+		if(!this.hash[eventName]){
+			this.hash[eventName] = [];
+		}
+		this.hash[eventName].push(callback);
+	},
+	fire : function(eventName){
+		if(!this.hash[eventName]) return;
+		var i = this.hash[eventName].length;
+		while(--i >= 0){
+			this.hash[eventName].call(this.target);
+		}
+	}
+}
+
 function CanvasGenericElement(config){
 	this.parent = null;
 	this.children = [];
@@ -52,6 +72,7 @@ function CanvasGenericElement(config){
 		scaleY : 1,
 		globalAlpha : 1
 	});
+	this.events = new cvsEventObject(this);
 }
 CanvasGenericElement.prototype = {
 	each : function(callback){
@@ -114,8 +135,8 @@ CanvasGenericElement.prototype = {
 
 		ctx.restore();
 
-		var i = this.children.length;
-		while(--i >= 0){
+		var i = 0, len = this.children.length;
+		for(; i < len; i++){
 			this.children[i].draw(ctx);
 		}
 	},
@@ -161,25 +182,52 @@ CanvasGenericElement.prototype = {
 	},
 	path : function(ctx){ throw 'Notcompliment'; },
 	text : function(ctx){ throw 'Notcompliment'; },
-	check : function(a){ throw 'Notcompliment'; }
+	check : function(x, y){ throw 'Notcompliment'; },
+	capture : function(x, y){
+		var tmp = null
+		if(!this.check(x, y)) return tmp;
+		var i = this.children.length;
+		while(--i >= 0){
+			tmp = this.children[i].capture(x, y);
+			if (!!tmp) return tmp;
+		}
+		return this;
+	},
+	bubble : function(eventName){
+
+	},
+	mousedown : function(callback){
+		this.events.regist('mousedown', callback);
+	},
+	mouseup : function(callback){
+		this.events.regist('mouseup', callback);
+	}
 }
+
+
 
 var Panel = _inherit('Panel', CanvasGenericElement, {
 	path : function(ctx){
 		var h = this.config.width * .5;
 		var v = this.config.height * .5;
 		ctx.beginPath();
-		ctx.moveTo(-h, -v);
-		ctx.lineTo(h, -v);
-		ctx.lineTo(h, v);
-		ctx.lineTo(-h, v);
-		ctx.closePath();
-		return this;
+		ctx.rect(
+			this.config.width * -.5,
+			this.config.height * -.5,
+			this.config.width,
+			this.config.height
+			);
 	},
 	size : function(w, h){
 		this.config.width = w;
 		this.config.height = h;
 		return this;
+	},
+	check : function(x, y){
+		return x >= this.config.x
+			&& x <= this.config.x + this.config.width
+			&& y >= this.config.y
+			&& y <= this.config.y + this.config.height;	
 	}
 }, { config : { width : 100, height : 100 } });
 
@@ -190,6 +238,13 @@ var Circle = _inherit('Circle', CanvasGenericElement, {
 	},
 	size : function(r){
 		this.config.radio = r;
+		return this;
+	},
+	check : function(x, y){
+		x = this.config.x - x;
+		y = this.config.y - y;
+		var d2 = x * x + y * y, r = this.config.radio;
+		return d2 < r * r;
 	}
 }, { config : { radio : 50 } })
 
@@ -238,7 +293,8 @@ b3.config.fillStyle =
 c.config.fillStyle =
 c2.config.fillStyle =
 c3.config.fillStyle =
-'rgba(0,0,0,0)';
+'rgba(0,0,0,0.2)';
+//'rgba(0,0,0,0)';
 
 b.moveTo(300, 200)
 b2.moveTo(300, 200)
@@ -266,20 +322,14 @@ var scale = 1;
 setInterval(function(){
 	deg = (deg + 1) % 180;
 	scale = Math.cos(deg * Math.PI / 180);
-	b.rotate(deg);
-	b.scale(scale, scale);
-	b2.rotate(-deg + 30);
-	b2.scale(scale, scale);
-	b3.rotate(deg * 2);
-	b3.scale(scale, scale);
+	b.rotate(deg).scale(scale, scale);
+	b2.rotate(-deg + 30).scale(scale, scale);
+	b3.rotate(deg * 2).scale(scale, scale);
 
 	scale = Math.sin(deg * Math.PI / 180);
-	c.size(scale * 50);
-	c2.size(scale * 70);
-	c3.size(scale * 90);
-	c.rotate(deg);
-	c2.rotate(-deg - 30);
-	c3.rotate(deg - 60);
+	c.size(scale * 50).rotate(deg);
+	c2.size(scale * 70).rotate(-deg - 30);
+	c3.size(scale * 90).rotate(deg - 60);
 
 	doc.draw();
 }, 30)
