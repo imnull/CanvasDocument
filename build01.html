@@ -15,6 +15,33 @@
 
 (function(w){
 
+w.MOUSE_DOWN = 'ontouchstart' in document ? 'touchstart' : 'mousedown';
+w.MOUSE_UP	 = 'ontouchend' in document ? 'touchend' : 'mouseup';
+w.MOUSE_MOVE = 'ontouchmove' in document ? 'touchmove' : 'mousemove';
+
+var evt = {
+	get : function (e) {
+		return (e = e || window.event).touches && e.touches.length ? e.touches[0] : e;
+	},
+	pos: function (e) {
+		e = this.get(e);
+		var x, y;
+		if ('pageX' in e) {
+			x = e.pageX - e.target.offsetLeft;
+			y = e.pageY - e.target.offsetTop;
+		} else if ('offsetX' in e) {
+			x = e.offsetX;
+			y = e.offsetY;
+		} else if ('clientX' in e) {
+			x = e.clientX - e.target.offsetLeft;
+			y = e.clientY - e.target.offsetTop;
+		} else {
+			x = y = 0;
+		}
+		return { x: x, y: y };
+	}
+}
+
 function _ext(a, b){	// a -> b
 	if(!b) b = {};
 	if(!a) return b;
@@ -51,7 +78,7 @@ cvsEventObject.prototype = {
 		if(!this.hash[eventName]) return;
 		var i = this.hash[eventName].length;
 		while(--i >= 0){
-			this.hash[eventName].call(this.target);
+			this.hash[eventName][i].call(this.target);
 		}
 	}
 }
@@ -196,6 +223,10 @@ CanvasGenericElement.prototype = {
 	bubble : function(eventName){
 
 	},
+	fireEvent : function(eventName, e, pos){
+		this.events.fire(eventName, e, pos);
+		this.parent && this.parent.fireEvent(eventName);
+	},
 	mousedown : function(callback){
 		this.events.regist('mousedown', callback);
 	},
@@ -224,10 +255,10 @@ var Panel = _inherit('Panel', CanvasGenericElement, {
 		return this;
 	},
 	check : function(x, y){
-		return x >= this.config.x
-			&& x <= this.config.x + this.config.width
-			&& y >= this.config.y
-			&& y <= this.config.y + this.config.height;	
+		return x >= this.config.x - this.config.width * .5
+			&& x <= this.config.x + this.config.width * .5
+			&& y >= this.config.y - this.config.height * .5
+			&& y <= this.config.y + this.config.height * .5;
 	}
 }, { config : { width : 100, height : 100 } });
 
@@ -254,6 +285,18 @@ function CanvasDocument(id){
 	if(!cvs) cvs = document.createElement('canvas');
 	this.context = cvs.getContext('2d');
 	this.ownerDocument = this;
+
+	var _ = this;
+	cvs.addEventListener(MOUSE_DOWN, function(e){
+		var pos = evt.pos(e);
+		var el = _.capture(pos.x, pos.y);
+		el.fireEvent('mousedown', e, pos);
+	}, false);
+	cvs.addEventListener(MOUSE_UP, function(e){
+		var pos = evt.pos(e);
+		var el = _.capture(pos.x, pos.y);
+		el.fireEvent('mouseup', e, pos);
+	}, false);
 }
 CanvasDocument.prototype = new CanvasGenericElement();
 CanvasDocument.prototype.createPanel = function(){
@@ -268,11 +311,15 @@ CanvasDocument.prototype.createCircle = function(){
 }
 CanvasDocument.prototype.draw = function(){
 	this.context.clearRect(0, 0, this.context.canvas.width, this.context.canvas.height);
-	var i = this.children.length;
-	while(--i >= 0){
+	var i = 0, len = this.children.length;
+	for(; i < len; i++){
 		this.children[i].draw(this.context);
 	}
 }
+CanvasDocument.prototype.check = function(){
+	return true;
+}
+
 
 w.CanvasGenericElement = CanvasGenericElement;
 w.CanvasDocument = CanvasDocument;
@@ -334,6 +381,21 @@ setInterval(function(){
 	doc.draw();
 }, 30)
 
+
+var button1 = doc.createPanel();
+button1.moveTo(100, 120);
+
+var circle = doc.createCircle();
+circle.moveTo(150, 140);
+circle.mousedown(function(){
+	alert('circle');
+})
+button1.mousedown(function(){
+	alert('rect');
+})
+
+doc.append(circle);
+doc.append(button1);
 
 </script>
 
