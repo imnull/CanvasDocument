@@ -109,23 +109,47 @@ function _inherit(name, base, extra, init){
 	return fn;
 }
 
+
+function rndkey32() {
+	var r = '', i = 0, len = 8;
+	for (; i < len; i++)
+		r += ((0xFFFFFF * (Math.random() + 1)) << 0).toString(36).substr(1);
+	i = len = null;
+	return r;
+}
+
 function cvsEventObject(target){
 	this.hash = {};
+	this.keys = [];
 	this.target = target;
 }
 cvsEventObject.prototype = {
 	regist : function(eventName, callback){
 		if(!this.hash[eventName]){
-			this.hash[eventName] = [];
+			this.hash[eventName] = {};
 		}
-		this.hash[eventName].push(callback);
+		if(!this.keys[eventName]){
+			this.keys[eventName] = [];
+		}
+		var key = rndkey32();
+		while(key in this.hash[eventName]) key = rndkey32();
+		this.hash[eventName][key] = callback;
+		this.keys[eventName].push(key);
+		return key;
 	},
 	fire : function(eventName){
 		if(!this.hash[eventName]) return;
-		var i = this.hash[eventName].length;
+		var i = this.keys[eventName].length;
 		while(--i >= 0){
-			this.hash[eventName][i].call(this.target);
+			this.hash[eventName][this.keys[eventName][i]].call(this.target);
 		}
+	},
+	remove : function(eventName, key){
+		if(!(this.keys[eventName] instanceof Array)) return;
+		var idx = this.keys[eventName].indexOf(key);
+		if(idx < 0) return;
+		this.keys[eventName].splice(idx, 1);
+		return delete this.hash[eventName][key];
 	}
 }
 
@@ -143,7 +167,8 @@ function CanvasGenericElement(config){
 		rotateAngle : 0,
 		scaleX : 1,
 		scaleY : 1,
-		globalAlpha : 1
+		globalAlpha : 1,
+		font : '12px Arial'
 	});
 	this.events = new cvsEventObject(this);
 }
@@ -204,7 +229,7 @@ CanvasGenericElement.prototype = {
 		this.path(ctx);
 		this.fill(ctx);
 		this.stroke(ctx);
-		//this.text(ctx);
+		this.text(ctx);
 
 		ctx.restore();
 
@@ -227,8 +252,10 @@ CanvasGenericElement.prototype = {
 		this.config.rotate = deg * Math.PI / 180;
 		return this;
 	},
-	content : function(str){
+	content : function(str, color, font){
 		this.config.text = str;
+		if(!!font) this.config.font = font;
+		this.config.textColor = color || '#000000';
 		return this;
 	},
 	fill : function(ctx){
@@ -253,8 +280,22 @@ CanvasGenericElement.prototype = {
 		this.config.globalAlpha = v;
 		return this;
 	},
+	text : function(ctx){
+		if(!this.config.text) return;
+		ctx.font = this.config.font;
+		ctx.fillStyle = this.config.textColor || '#000000';
+
+		var w, h;
+		try {
+			w = ctx.measureText(this.config.text).width;
+			h = ctx.measureText('啊').width;
+		} catch(ex){
+			w = h = 0;
+		}
+
+		ctx.fillText(this.config.text, w * -.5, h * .15);
+	},
 	path : function(ctx){ throw 'Notcompliment'; },
-	text : function(ctx){ throw 'Notcompliment'; },
 	check : function(x, y){ throw 'Notcompliment'; },
 	capture : function(x, y){
 		var tmp = null
@@ -274,25 +315,63 @@ CanvasGenericElement.prototype = {
 		this.parent && this.parent.fireEvent(eventName);
 	},
 	mousedown : function(callback){
-		this.events.regist('mousedown', callback);
+		return this.events.regist('mousedown', callback);
 	},
 	mouseup : function(callback){
-		this.events.regist('mouseup', callback);
+		return this.events.regist('mouseup', callback);
 	},
-	$moveTo : function(x, y, dur, m, callback){
+	removeEvent : function(eventName, key){
+		this.events.remove(eventName, key);
+	},
+	$moveTo : function(x, y, dur, m, callback, delay){
 		var f = _twe[m || 'quad_out'];
-		var dx = x - this.config.x;
-		var dy = y - this.config.y;
-		var step = _ani.S(dur);
 		var X = this.config.x;
 		var Y = this.config.y;
+		var dx = x - X;
+		var dy = y - Y;
+		var step = _ani.S(dur);
 		var _ = this;
 		_ani.reg(function(c){
 			_.moveTo(f(c, X, dx, step), f(c, Y, dy, step));
 			if(c >= step){
 				_.moveTo(x, y);
 				if(typeof callback === 'function'){
-					callback(_);
+					if(delay && delay > 0){
+						var st = setTimeout(function(){
+							clearTimeout(st);
+							st = null;
+							callback(_);
+						}, delay)
+					} else {
+						callback(_);
+					}
+				}
+				return true;
+			}
+		});
+	},
+	$scaleTo : function(x, y, dur, m, callback, delay){
+		var f = _twe[m || 'quad_out'];
+		var X = this.config.scaleX;
+		var Y = this.config.scaleY;
+		var dx = x - X;
+		var dy = y - Y;
+		var step = _ani.S(dur);
+		var _ = this;
+		_ani.reg(function(c){
+			_.scale(f(c, X, dx, step), f(c, Y, dy, step));
+			if(c >= step){
+				_.scale(x, y);
+				if(typeof callback === 'function'){
+					if(delay && delay > 0){
+						var st = setTimeout(function(){
+							clearTimeout(st);
+							st = null;
+							callback(_);
+						}, delay)
+					} else {
+						callback(_);
+					}
 				}
 				return true;
 			}
@@ -503,24 +582,33 @@ var scale = 1;
 
 var button1 = doc.createPanel();
 button1.moveTo(100, 120);
+button1.content('click me');
 
 var circle = doc.createCircle();
-circle.moveTo(150, 140);
-circle.mouseup(function(){
-	alert('circle');
-})
+circle.moveTo(550, 50);
+circle.content('click me');
+var key, circleFn = function(){
+	this.removeEvent('mouseup', key);
+	circle.$moveTo(circle.config.x, 350, 1000, 'bounce_out', function(){
+		circle.$moveTo(circle.config.x, 50, 1000, 'elastic_out', function(){
+			key = circle.mouseup(circleFn);
+		});
+	}, 500);
+}
+key = circle.mouseup(circleFn);
+
+var key2, buttonFn = function(){
+	this.removeEvent('mouseup', key2);
+	button1.$scaleTo(0.2, 0.2, 1000, 'bounce_out', function(){
+		button1.$scaleTo(1, 1, 1000, 'elastic_out', function(){
+			key2 = button1.mouseup(buttonFn);
+		});
+	}, 200);
+}
+key2 = button1.mouseup(buttonFn);
 
 doc.append(circle);
 doc.append(button1);
-
-window.onload = function(){
-	circle.$moveTo(500, 200, 2000, 'bounce_out', function(){
-		console.log(ani);
-	});
-	setTimeout(function(){
-		button1.$moveTo(120, 300, 1500, 'back_out');
-	}, 300)
-}
 
 ani.reg(function(_c, _t, _i){
 	deg = (deg + 1) % 180;
