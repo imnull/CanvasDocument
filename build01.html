@@ -120,7 +120,7 @@ function rndkey32() {
 
 function cvsEventObject(target){
 	this.hash = {};
-	this.keys = [];
+	this.keys = {};
 	this.target = target;
 }
 cvsEventObject.prototype = {
@@ -137,11 +137,11 @@ cvsEventObject.prototype = {
 		this.keys[eventName].push(key);
 		return key;
 	},
-	fire : function(eventName){
-		if(!this.hash[eventName]) return;
-		var i = this.keys[eventName].length;
+	fire : function(en){
+		if(!this.hash[en]) return;
+		var h = this.hash[en], k = this.keys[en], i = k.length, t = this.target;
 		while(--i >= 0){
-			this.hash[eventName][this.keys[eventName][i]].call(this.target);
+			h[k[i]].call(t);
 		}
 	},
 	remove : function(eventName, key){
