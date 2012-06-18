@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<style type="text/css">
+		canvas { border:1px solid #000; }
+	</style>
+	<script type="text/javascript" src="CanvasDOM.js"></script>
+</head>
+
+<body>
+
+<canvas id="test" width="600" height="400"></canvas>
+
+<script type="text/javascript">
+
+
+/*
+var doc = new CanvasDocument('test');
+var b = doc.createPanel(70, 80);
+var c = doc.createCircle(70, 80);
+b.mouseup(function(){
+	console.log(this)
+})
+doc.append(b);
+doc.append(c);
+doc.draw();
+*/
+
+var canvas = document.getElementById('test');
+var ctx = canvas.getContext('2d');
+ctx.lineWidth = 1;
+ctx.strokeStyle = '#000';
+
+function mousedown(e){
+	canvas.addEventListener('mouseup', mouseup, false);
+	canvas.addEventListener('mousemove', mousemove, false);
+	draw(e);
+}
+function mousemove(e){
+	draw(e);
+}
+function draw(e){
+	var pos = evt.pos(e);
+	var w = canvas.width, h = canvas.height;
+	ctx.save();
+	ctx.clearRect(0, 0, w, h);
+	var s = pos.x - w, t = pos.y - h, h2 = Math.sqrt(s*s + t*t) * .5
+	var angle = Math.abs(Math.atan2(s, t)) % (Math.PI * .5);
+	angle = Math.min(Math.PI * .5 - 0.001, angle);
+	angle = Math.max(0.001, angle);
+
+	var p1, p2;
+	p1 = h - h2 / Math.sin(angle);
+	p2 = w - h2 / Math.cos(angle);
+	var cpos = {
+		x : pos.x + s * -.5, y : pos.y + t * -.5
+	}
+	
+	var curvePercent = .3;
+
+	ctx.beginPath();
+	ctx.rect(0, 0, w, h);
+	ctx.rect(pos.x - 10, pos.y - 10, 20, 20);
+	ctx.rect(cpos.x - 10, cpos.y - 10, 20, 20);
+
+	ctx.moveTo(pos.x, pos.y);
+	ctx.quadraticCurveTo(p2, h, p2 * (1 - curvePercent), h);
+	//ctx.quadraticCurveTo(p2 * xP, cpos.y, 0, h);
+
+	ctx.moveTo(pos.x, pos.y);
+	ctx.quadraticCurveTo(w, p1 * (1 + curvePercent), w, p1);
+
+	ctx.moveTo(p2 * (1 - curvePercent), h);
+	ctx.lineTo(w, p1);
+
+
+	
+	//ctx.lineTo(p2, h);
+	//ctx.lineTo(pos.x, pos.y);
+	//ctx.lineTo(w, h);
+
+	ctx.lineWidth = 5;
+	ctx.stroke();
+	ctx.restore();
+}
+function mouseup(e){
+	canvas.removeEventListener('mousemove', mousemove, false);
+	canvas.removeEventListener('mouseup', mouseup, false);
+}
+
+canvas.addEventListener('mousedown', mousedown, false);
+
+
+</script>
+
+
+</body>
+
+
+</html>
