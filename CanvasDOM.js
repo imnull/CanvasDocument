@@ -64,7 +64,29 @@ var _ani = {
 				i++;
 			}
 		}
-		i = cbs = len = now = null;
+		cbs = len = now = null;
+		if(!!_ani.docs){
+			i = _ani.docs.length;
+			while(--i >= 0){
+				_ani.docs[i].draw();
+			}
+		}
+		i = null;
+		//_ani.canvasdoc && _ani.canvasdoc.draw();
+	},
+	regdoc : function(doc){
+		if(!this.docs) this.docs = [];
+		this.docs.push(doc);
+	},
+	removeDoc : function(doc){
+		if(!this.docs) return;
+		var i = this.docs.length;
+		while(--i >= 0){
+			if(this.docs[i] === doc){
+				this.docs.splice(i, 1);
+				return;
+			}
+		} 
 	}
 }
 
@@ -152,7 +174,9 @@ function CanvasGenericElement(config){
 		scaleX : 1,
 		scaleY : 1,
 		globalAlpha : 1,
-		font : '12px Arial'
+		font : '12px Arial',
+		align : null,
+		valign : null
 	});
 	this.events = new cvsEventObject(this);
 }
@@ -277,7 +301,7 @@ CanvasGenericElement.prototype = {
 			w = h = 0;
 		}
 
-		ctx.fillText(this.config.text, w * -.5, h * .15);
+		ctx.fillText(this.config.text, w * -.5, h * .20);
 	},
 	path : function(ctx){ throw 'Notcompliment'; },
 	check : function(x, y){ throw 'Notcompliment'; },
@@ -472,7 +496,36 @@ var Circle = _inherit('Circle', CanvasGenericElement, {
 		var d2 = x * x + y * y, r = this.config.radio;
 		return d2 < r * r;
 	}
-}, { config : { radio : 50 } })
+}, { config : { radio : 50 } });
+
+var Button = _inherit('Button', CanvasGenericElement, {
+	path : function(ctx){
+		var h = this.config.width * .5;
+		var v = this.config.height * .5;
+		var pi = Math.PI;
+		ctx.beginPath();
+		ctx.arc(-h, 0, v, pi * .5, pi * 1.5, false);
+		ctx.lineTo(h, -v);
+		ctx.arc(h, 0, v, pi * -.5, pi * .5, false);
+		ctx.closePath();
+	},
+	size : function(w, h){
+		this.config.width = w;
+		this.config.height = h;
+		return this;
+	},
+	check : function(x, y){
+		var conf = this.config
+			, w = conf.width, h = conf.height
+			, X = conf.x, Y = conf.y
+			, r = h * .5
+			, x1 = X - x - w * .5, x2 = X - x + w * .5, _y = Y - y;
+			;
+		return (x1 * x1 + _y * _y < r * r) || (x2 * x2 + _y * _y < r * r)
+			|| (x >= X - w * .5 && x <= X + w * .5 && y >= Y - h * .5 && y <= Y + h * .5)
+			;
+	}
+})
 
 function CanvasDocument(id){
 	CanvasGenericElement.call(this, {});
@@ -505,6 +558,13 @@ CanvasDocument.prototype.createPanel = function(x, y, w, h){
 CanvasDocument.prototype.createCircle = function(x, y, r){
 	var p = new Circle({
 		x : x || 0, y : y || 0, radio : r || 50
+	});
+	p.ownerDocument = this;
+	return p;
+}
+CanvasDocument.prototype.createButton = function(x, y, w, h){
+	var p = new Button({
+		x : x || 0, y : y || 0, width : w || 100, height : h || 24
 	});
 	p.ownerDocument = this;
 	return p;

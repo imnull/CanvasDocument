@@ -3,7 +3,7 @@
 <head>
 	<title></title>
 	<style type="text/css">
-		canvas { border:1px solid #000; }
+		canvas { border:0px solid #000; }
 	</style>
 	<script type="text/javascript" src="CanvasDOM.js"></script>
 </head>
@@ -17,50 +17,15 @@
 
 
 var doc = new CanvasDocument('test');
-console.log(doc)
-var b = doc.createPanel();
-var b2 = doc.createPanel();
-var b3 = doc.createPanel();
-var c = doc.createCircle();
-var c2 = doc.createCircle();
-var c3 = doc.createCircle();
-b.config.fillStyle = 
-b2.config.fillStyle = 
-b3.config.fillStyle = 
-c.config.fillStyle =
-c2.config.fillStyle =
-c3.config.fillStyle =
-'rgba(255,255,0,0.1)';
-//'rgba(0,0,0,0)';
-
-b.moveTo(300, 200)
-b2.moveTo(300, 200)
-b3.moveTo(300, 200)
-c.moveTo(300, 200)
-c2.moveTo(300, 200)
-c3.moveTo(300, 200)
-
-doc.append(c);
-doc.append(c2);
-doc.append(c3);
-doc.append(b);
-doc.append(b2);
-doc.append(b3);
-
-c.scale(1, .5);
-c2.scale(1, 2);
-c3.scale(1, 1.5);
-b.size(200, 200);
-b2.size(200, 200);
-b3.size(200, 200);
-
-var deg = 0;
-var scale = 1;
-
+ani.regdoc(doc);
 
 var button1 = doc.createPanel();
 button1.moveTo(100, 120);
 button1.content('click me');
+
+var button3 = doc.createButton();
+button3.moveTo(200, 200);
+button3.content('new button');
 
 var circle = doc.createCircle();
 circle.moveTo(550, 50);
@@ -85,23 +50,27 @@ var key2, buttonFn = function(){
 }
 key2 = button1.mouseup(buttonFn);
 
+var key3, buttonFn3 = function(){
+	this.removeEvent('mouseup', key3);
+	this.config.fillStyle = '#cccccc';
+	button3.$scaleTo(0.2, 0.2, 1000, 'bounce_out', function(){
+		button3.$scaleTo(1, 1, 1000, 'elastic_out', function(){
+			key3 = button3.mouseup(buttonFn3);
+		});
+	}, 200);
+}
+button3.mousedown(function(){
+	if(!this.ownerDocument) return;
+	this.config.fillStyle = '#ffffff';
+	this.ownerDocument.draw();
+})
+key3 = button3.mouseup(buttonFn3);
+
 doc.append(circle);
 doc.append(button1);
+doc.append(button3);
 
-ani.reg(function(_c, _t, _i){
-	deg = (deg + 1) % 180;
-	scale = Math.cos(deg * Math.PI / 180);
-	b.rotate(deg).scale(scale, scale);
-	b2.rotate(-deg + 30).scale(scale, scale);
-	b3.rotate(deg * 2).scale(scale, scale);
-
-	scale = Math.sin(deg * Math.PI / 180);
-	c.size(scale * 50).rotate(deg);
-	c2.size(scale * 70).rotate(-deg - 30);
-	c3.size(scale * 90).rotate(deg - 60);
-
-	doc.draw();
-})
+doc.draw();
 
 </script>
 
