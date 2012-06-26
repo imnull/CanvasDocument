@@ -111,6 +111,7 @@ function _inherit(name, base, extra, init){
 	eval('var fn = function ' + (name || '___') + '(config){'
 		+ 'base.call(this, _ext(config, init || {}));'
 		+ '}');
+	fn.name = name;
 	_ext(extra, _ext(base.prototype, fn.prototype));
 	return fn;
 }
@@ -496,7 +497,7 @@ var Circle = _inherit('Circle', CanvasGenericElement, {
 		var d2 = x * x + y * y, r = this.config.radio;
 		return d2 < r * r;
 	}
-}, { config : { radio : 50 } });
+}, { radio : 50 });
 
 var Button = _inherit('Button', CanvasGenericElement, {
 	path : function(ctx){
@@ -525,7 +526,43 @@ var Button = _inherit('Button', CanvasGenericElement, {
 			|| (x >= X - w * .5 && x <= X + w * .5 && y >= Y - h * .5 && y <= Y + h * .5)
 			;
 	}
-})
+});
+
+var Grid = _inherit('Grid', CanvasGenericElement, {
+	path : function(ctx){
+		var h = this.config.width * .5;
+		var v = this.config.height * .5;
+		var hs = this.config.width / this.config.sizeH;
+		var vs = this.config.height / this.config.sizeV;
+		ctx.beginPath();
+		ctx.rect(
+			this.config.width * -.5,
+			this.config.height * -.5,
+			this.config.width,
+			this.config.height
+			);
+		var i, len;
+		for(i = 1, len = this.config.sizeH; i < len; i++){
+			ctx.moveTo(i * hs - h, -v);
+			ctx.lineTo(i * hs - h, v);
+		}
+		for(i = 1, len = this.config.sizeV; i < len; i++){
+			ctx.moveTo(-h, i * vs - v);
+			ctx.lineTo(h, i * vs - v);
+		}
+	},
+	size : function(w, h){
+		this.config.width = w;
+		this.config.height = h;
+		return this;
+	},
+	check : function(x, y){
+		return x >= this.config.x - this.config.width * .5
+			&& x <= this.config.x + this.config.width * .5
+			&& y >= this.config.y - this.config.height * .5
+			&& y <= this.config.y + this.config.height * .5;
+	}
+}, { width : 200, height : 200, sizeH : 10, sizeV : 10 });
 
 function CanvasDocument(id){
 	CanvasGenericElement.call(this, {});
@@ -565,6 +602,13 @@ CanvasDocument.prototype.createCircle = function(x, y, r){
 CanvasDocument.prototype.createButton = function(x, y, w, h){
 	var p = new Button({
 		x : x || 0, y : y || 0, width : w || 100, height : h || 24
+	});
+	p.ownerDocument = this;
+	return p;
+}
+CanvasDocument.prototype.createGrid = function(x, y, w, h){
+	var p = new Grid({
+		x : x || 0, y : y || 0, width : w || 200, height : h || 200
 	});
 	p.ownerDocument = this;
 	return p;
