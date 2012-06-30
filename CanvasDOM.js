@@ -29,6 +29,7 @@ var _evt = {
 
 var _ani = {
 	FPS : 50,
+	RATE : 1,
 	S : function(d){
 		return Math.ceil(d / (1000 / this.FPS));
 	},
@@ -54,29 +55,37 @@ var _ani = {
 		}
 		var i = 0, cbs = _ani.cbs, len = cbs.length;
 		var now = (new Date()).getTime();
+		var r = _ani.RATE;
+		var o;
 		while(i < len){
-			cbs[i].c += 1;
-			if(cbs[i].f(cbs[i].c, now - cbs[i].t, now - cbs[i].i)){
+			o = cbs[i];
+			o.c += 1;
+			if(o.f(o.c * r, (now - o.t) * r, (now - o.i) * r)){
 				cbs.splice(i, 1);
 				len--;
 			} else {
-				cbs[i].i = now;
+				o.i = now;
 				i++;
 			}
 		}
 		cbs = len = now = null;
+
 		if(!!_ani.docs){
 			i = _ani.docs.length;
 			while(--i >= 0){
-				_ani.docs[i].draw();
+				o = _ani.docs[i];
+				o.doc.draw(o.before, o.after);
 			}
 		}
+		o = null;
 		i = null;
 		//_ani.canvasdoc && _ani.canvasdoc.draw();
 	},
-	regdoc : function(doc){
+	regdoc : function(doc, before, after){
 		if(!this.docs) this.docs = [];
-		this.docs.push(doc);
+		this.docs.push({
+			doc : doc, before : before, after : after
+		});
 	},
 	removeDoc : function(doc){
 		if(!this.docs) return;
@@ -564,6 +573,50 @@ var Grid = _inherit('Grid', CanvasGenericElement, {
 	}
 }, { width : 200, height : 200, sizeH : 10, sizeV : 10 });
 
+var Background = _inherit('Background', CanvasGenericElement, {
+	path : function(ctx){ return; },
+	size : function(w, h){ return; },
+	check : function(x, y){ return false; },
+	draw : function(ctx){
+		if(!this.image) return;
+		var img = this.image, c = this.config;
+		ctx.drawImage(img, 0, 0, img.width, img.height, c.x, 0, c.width, c.height);
+	},
+	setImage : function(img){
+		this.image = img || this.image;
+		if(!this.image || !this.ownerDocument) return;
+
+		var img = this.image;
+		var ctx = this.ownerDocument.context;
+		var _w = img.width, _h = img.height, _r = _w / _h;
+		var w = ctx.canvas.width, h = ctx.canvas.height;
+		var r = w / h;
+
+		if(r > _r){
+			this.config.width = w;
+			this.config.height = w / _r;
+		} else {
+			this.config.width = h * _r;
+			this.config.height = h;
+		}
+
+	},
+	$move : function(rate){
+		var _ = this;
+		rate = rate || 1;
+		_.moveKey = _ani.reg(function(f, i, l){
+			if(!_.image) return;
+			var img = _.image, w = img.width, h = img.height;
+
+			if(rate > 0){
+				_.moveTo(f * rate, f * rate);
+			} else if(rate < 0 && _.image){
+				_.moveTo(w + f * rate, h + f * rate);
+			}
+		})
+	}
+});
+
 function CanvasDocument(id){
 	CanvasGenericElement.call(this, {});
 	var cvs = typeof id === 'string' ? document.getElementById(id) : cvs;
@@ -613,11 +666,27 @@ CanvasDocument.prototype.createGrid = function(x, y, w, h){
 	p.ownerDocument = this;
 	return p;
 }
-CanvasDocument.prototype.draw = function(){
-	this.context.clearRect(0, 0, this.context.canvas.width, this.context.canvas.height);
+CanvasDocument.prototype.createBackground = function(fillStyle){
+	var p = new Background();
+	p.ownerDocument = this;
+	return p;
+}
+CanvasDocument.prototype.draw = function(before, after){
+	var w = this.context.canvas.width;
+	var h = this.context.canvas.height;
+	this.context.clearRect(0, 0, w, h);
+
+	if(typeof before === 'function'){
+		before(this, w, h);
+	}
+
 	var i = 0, len = this.children.length;
 	for(; i < len; i++){
 		this.children[i].draw(this.context);
+	}
+
+	if(typeof after === 'function'){
+		after(this, w, h);
 	}
 }
 CanvasDocument.prototype.check = function(){

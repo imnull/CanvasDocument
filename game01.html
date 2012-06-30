@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<style type="text/css">
+		canvas { border:0px solid #000; }
+	</style>
+	<script type="text/javascript" src="CanvasDOM.js"></script>
+</head>
+
+<body>
+
+<canvas id="test" width="300" height="500"></canvas>
+
+<script type="text/javascript">
+
+
+
+var doc = new CanvasDocument('test');
+ani.regdoc(doc);
+
+var bg = doc.createBackground();
+
+var img = new Image();
+img.onload = function(){
+	bg.setImage(this);
+	doc.draw();
+}
+img.src = 'bg.png'
+
+var button1 = doc.createPanel();
+button1.moveTo(60, 60);
+button1.content('click me');
+
+var button3 = doc.createButton();
+button3.moveTo(200, 200);
+button3.content('new button');
+
+doc.append(bg);
+doc.append(button1);
+doc.append(button3);
+
+doc.draw();
+
+
+
+window.onload = function(){
+	//bg.$move(-1);
+}
+
+</script>
+
+
+</body>
+
+
+</html>
