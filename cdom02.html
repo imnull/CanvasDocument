@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<style type="text/css">
+		body{ margin: 0px;}
+		canvas { border:0px solid #000; background-color: #ccc; }
+	</style>
+	<script type="text/javascript" src="CanvasDOM.js"></script>
+</head>
+
+<body>
+
+<canvas id="test" width="600" height="400"></canvas>
+
+<script type="text/javascript">
+
+
+
+var doc = new CanvasDocument('test');
+ani.regdoc(doc);
+
+var button1 = doc.createPanel();
+button1.moveTo(100, 120);
+button1.content('click me');
+
+var button3 = doc.createButton();
+button3.moveTo(200, 200);
+button3.content('new button');
+
+var circle = doc.createCircle();
+circle.moveTo(550, 50);
+circle.content('click me');
+var key, circleFn = function(){
+	this.removeEvent('mouseup', key);
+	circle.$moveTo(circle.config.x, 350, 1000, 'bounce_out', function(){
+		circle.$moveTo(circle.config.x, 50, 1000, 'elastic_out', function(){
+			key = circle.mouseup(circleFn);
+		});
+	}, 500);
+}
+key = circle.mouseup(circleFn);
+
+var key2, buttonFn = function(){
+	this.removeEvent('mouseup', key2);
+	button1.$scaleTo(0.2, 0.2, 1000, 'bounce_out', function(){
+		button1.$scaleTo(1, 1, 1000, 'elastic_out', function(){
+			key2 = button1.mouseup(buttonFn);
+		});
+	}, 200);
+}
+key2 = button1.mouseup(buttonFn);
+
+var key3, buttonFn3 = function(){
+	this.removeEvent('mouseup', key3);
+	this.config.fillStyle = '#cccccc';
+	button3.$scaleTo(0.2, 0.2, 1000, 'bounce_out', function(){
+		button3.$scaleTo(1, 1, 1000, 'elastic_out', function(){
+			key3 = button3.mouseup(buttonFn3);
+		});
+	}, 200);
+}
+button3.mousedown(function(){
+	if(!this.ownerDocument) return;
+	this.config.fillStyle = '#ffffff';
+	this.ownerDocument.draw();
+})
+key3 = button3.mouseup(buttonFn3);
+
+doc.append(circle);
+doc.append(button1);
+doc.append(button3);
+
+doc.fit(window)
+doc.draw();
+
+window.onresize = function(){
+	doc.fit(window);
+	doc.draw();
+}
+
+</script>
+
+
+</body>
+
+
+</html>

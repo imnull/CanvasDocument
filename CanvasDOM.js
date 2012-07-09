@@ -173,6 +173,7 @@ function CanvasGenericElement(config){
 	this.parent = null;
 	this.children = [];
 	this.image = null;
+	this.radio = 1;
 	this.config = _ext(config, {
 		x : 0,
 		y : 0,
@@ -240,7 +241,7 @@ CanvasGenericElement.prototype = {
 
 		ctx.save();
 
-		ctx.translate(this.config.x, this.config.y);
+		ctx.translate(this.config.x * this.radio, this.config.y * this.radio);
 		ctx.rotate(this.config.rotate);
 		ctx.scale(this.config.scaleX, this.config.scaleY);
 
@@ -248,6 +249,18 @@ CanvasGenericElement.prototype = {
 		this.fill(ctx);
 		this.stroke(ctx);
 		this.text(ctx);
+
+		if(w.DEBUG){
+			ctx.beginPath();
+			ctx.rect(-1, -1, 2, 2);
+			ctx.fillStyle = '#ffffff';
+			ctx.strokeStyle = '#000000';
+			ctx.lineWidth = 2;
+			ctx.fill();
+			ctx.stroke();
+		}
+
+		
 
 		ctx.restore();
 
@@ -311,7 +324,21 @@ CanvasGenericElement.prototype = {
 			w = h = 0;
 		}
 
-		ctx.fillText(this.config.text, w * -.5, h * .20);
+		ctx.fillText(this.config.text, w * -.5, h * 0.20);
+
+		return this;
+	},
+	fit : function(r){
+		r = r || 1;
+		//this.config.x *= r;
+		//this.config.y *= r;
+		this.radio = r;
+
+		this.each(function(c){
+			c.fit(r);
+		})
+
+		return this;
 	},
 	path : function(ctx){ throw 'Notcompliment'; },
 	check : function(x, y){ throw 'Notcompliment'; },
@@ -397,6 +424,8 @@ CanvasGenericElement.prototype = {
 	}
 }
 
+var cp = CanvasGenericElement.prototype;
+
 var _twe = {
 	linear : function(t,b,c,d){
 		return c * t / d + b;
@@ -468,15 +497,10 @@ var _twe = {
 
 var Panel = _inherit('Panel', CanvasGenericElement, {
 	path : function(ctx){
-		var h = this.config.width * .5;
-		var v = this.config.height * .5;
+		var W = this.config.width * this.radio;
+		var H = this.config.height * this.radio;
 		ctx.beginPath();
-		ctx.rect(
-			this.config.width * -.5,
-			this.config.height * -.5,
-			this.config.width,
-			this.config.height
-			);
+		ctx.rect(W * -.5, H * -.5, W, H);
 	},
 	size : function(w, h){
 		this.config.width = w;
@@ -484,34 +508,40 @@ var Panel = _inherit('Panel', CanvasGenericElement, {
 		return this;
 	},
 	check : function(x, y){
-		return x >= this.config.x - this.config.width * .5
-			&& x <= this.config.x + this.config.width * .5
-			&& y >= this.config.y - this.config.height * .5
-			&& y <= this.config.y + this.config.height * .5;
+		var r = this.radio, c = this.config;
+		var X = c.x * r, Y = c.y * r, W = c.width * r, H = c.height * r;
+		//console.log(X, Y, W, H)
+		var b = x >= X - W * .5
+			&& x <= X + W * .5
+			&& y >= Y - H * .5
+			&& y <= Y + H * .5;
+		return b;
 	}
 }, { config : { width : 100, height : 100 } });
 
 var Circle = _inherit('Circle', CanvasGenericElement, {
 	path : function(ctx){
 		ctx.beginPath();
-		ctx.arc(0, 0, this.config.radio, 0, Math.PI * 2, false);
+		ctx.arc(0, 0, this.config.radio * this.radio, 0, Math.PI * 2, false);
 	},
 	size : function(r){
 		this.config.radio = r;
 		return this;
 	},
 	check : function(x, y){
-		x = this.config.x - x;
-		y = this.config.y - y;
-		var d2 = x * x + y * y, r = this.config.radio;
+		x = this.config.x * this.radio - x;
+		y = this.config.y * this.radio - y;
+		var d2 = x * x + y * y, r = this.config.radio * this.radio;
 		return d2 < r * r;
 	}
 }, { radio : 50 });
 
 var Button = _inherit('Button', CanvasGenericElement, {
 	path : function(ctx){
-		var h = this.config.width * .5;
-		var v = this.config.height * .5;
+		var W = this.config.width * this.radio;
+		var H = this.config.height * this.radio;
+		var h = W * .5;
+		var v = H * .5;
 		var pi = Math.PI;
 		ctx.beginPath();
 		ctx.arc(-h, 0, v, pi * .5, pi * 1.5, false);
@@ -525,9 +555,9 @@ var Button = _inherit('Button', CanvasGenericElement, {
 		return this;
 	},
 	check : function(x, y){
-		var conf = this.config
-			, w = conf.width, h = conf.height
-			, X = conf.x, Y = conf.y
+		var conf = this.config, R = this.radio
+			, w = conf.width * R, h = conf.height * R
+			, X = conf.x * R, Y = conf.y * R
 			, r = h * .5
 			, x1 = X - x - w * .5, x2 = X - x + w * .5, _y = Y - y;
 			;
@@ -570,6 +600,12 @@ var Grid = _inherit('Grid', CanvasGenericElement, {
 			&& x <= this.config.x + this.config.width * .5
 			&& y >= this.config.y - this.config.height * .5
 			&& y <= this.config.y + this.config.height * .5;
+	},
+	fit : function(r){
+		r = r || 1;
+		this.config.width *= r;
+		this.config.height *= r;
+		return cp.fit.call(this, r);
 	}
 }, { width : 200, height : 200, sizeH : 10, sizeV : 10 });
 
@@ -623,6 +659,10 @@ function CanvasDocument(id){
 	if(!cvs) cvs = document.createElement('canvas');
 	this.context = cvs.getContext('2d');
 	this.ownerDocument = this;
+	this.origin = {
+		width : cvs.width,
+		height : Math.max(cvs.height, 1),
+	}
 
 	var _ = this;
 	cvs.addEventListener(MOUSE_DOWN, function(e){
@@ -691,6 +731,36 @@ CanvasDocument.prototype.draw = function(before, after){
 }
 CanvasDocument.prototype.check = function(){
 	return true;
+}
+CanvasDocument.prototype.fit = function(dom){
+	dom = dom || this.context.canvas.parentNode;
+	if(!dom || (dom != w && dom.nodeType != 1)) return;
+	var W, H, cvs = this.context.canvas;
+	if(dom === window){
+		W = w.innerWidth;
+		H = Math.max(w.innerHeight, 1);
+	} else {
+		W = dom.offsetWidth;
+		H = Math.max(dom.offsetHeight, 1);
+	}
+	var r = this.origin.width / this.origin.height;
+	var R = W / H;
+
+	var _w, _h;
+	if(r > R){
+		_w = W;
+		_h = W / r;
+		r = W / this.origin.width;
+	} else {
+		_h = H;
+		_w = H * r;
+		r = H / this.origin.height;
+	}
+
+	cvs.width = Math.floor(_w);
+	cvs.height = Math.floor(_h);
+
+	return cp.fit.call(this, r);
 }
 
 
