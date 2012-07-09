@@ -181,6 +181,7 @@ function CanvasGenericElement(config){
 		strokeStyle : '#000000',
 		text : '',
 		lineWidth : 0,
+		lineCap : 'butt',
 		rotateAngle : 0,
 		scaleX : 1,
 		scaleY : 1,
@@ -294,7 +295,8 @@ CanvasGenericElement.prototype = {
 		ctx.fill();
 	},
 	stroke : function(ctx){
-		ctx.lineWidth = this.config.lineWidth;
+		ctx.lineWidth = this.config.lineWidth * this.radio;
+		ctx.lineCap = this.config.lineCap;
 		ctx.strokeStyle = this.config.strokeStyle;
 		ctx.stroke();
 	},
@@ -596,18 +598,58 @@ var Grid = _inherit('Grid', CanvasGenericElement, {
 		return this;
 	},
 	check : function(x, y){
-		return x >= this.config.x - this.config.width * .5
-			&& x <= this.config.x + this.config.width * .5
-			&& y >= this.config.y - this.config.height * .5
-			&& y <= this.config.y + this.config.height * .5;
-	},
-	fit : function(r){
-		r = r || 1;
-		this.config.width *= r;
-		this.config.height *= r;
-		return cp.fit.call(this, r);
+		var r = this.radio, c = this.config;
+		var X = c.x * r, Y = c.y * r, W = c.width * r, H = c.height * r;
+		var b = x >= X - W * .5
+			&& x <= X + W * .5
+			&& y >= Y - H * .5
+			&& y <= Y + H * .5;
+		return b;
 	}
 }, { width : 200, height : 200, sizeH : 10, sizeV : 10 });
+
+var ProgressBar = _inherit('ProgressBar', CanvasGenericElement, {
+	path : function(ctx){
+		var W = this.config.width * this.radio;
+		var H = this.config.height * this.radio;
+		ctx.beginPath();
+		ctx.rect(W * -.5, H * -.5, W, H);
+		ctx.fillStyle = this.config.subStyle;
+		ctx.fill();
+		ctx.beginPath();
+		ctx.rect(W * -.5, H * -.5, W * this.value, H);
+		ctx.fillStyle = this.config.fillStyle;
+		ctx.fill();
+		ctx.beginPath();
+		ctx.rect(W * -.5, H * -.5, W, H);
+	},
+	fill : function(){},
+	size : function(w, h){
+		this.config.width = w;
+		this.config.height = h;
+		return this;
+	},
+	check : function(x, y){
+		var r = this.radio, c = this.config;
+		var X = c.x * r, Y = c.y * r, W = c.width * r, H = c.height * r;
+		//console.log(X, Y, W, H)
+		var b = x >= X - W * .5
+			&& x <= X + W * .5
+			&& y >= Y - H * .5
+			&& y <= Y + H * .5;
+		return b;
+	},
+	set : function(v1, v2){
+		if(!v2) this.value = Math.max(0, Math.min(1, Math.abs(v1)));
+		else this.set(v1 / v2);
+	}
+}, { width : 200, height : 12
+	, fillStyle : '#fff'
+	, subStyle : '#ccc'
+	, strokeStyle : '#fff'
+	, lineWidth : 5
+	, lineCap : 'round'
+});
 
 var Background = _inherit('Background', CanvasGenericElement, {
 	path : function(ctx){ return; },
@@ -711,6 +753,12 @@ CanvasDocument.prototype.createBackground = function(fillStyle){
 	p.ownerDocument = this;
 	return p;
 }
+CanvasDocument.prototype.createProgressBar = function(fillStyle){
+	var p = new ProgressBar();
+	p.ownerDocument = this;
+	p.value = 0;
+	return p;
+}
 CanvasDocument.prototype.draw = function(before, after){
 	var w = this.context.canvas.width;
 	var h = this.context.canvas.height;
@@ -743,6 +791,7 @@ CanvasDocument.prototype.fit = function(dom){
 		W = dom.offsetWidth;
 		H = Math.max(dom.offsetHeight, 1);
 	}
+	cvs.style.position = 'absolute';
 	var r = this.origin.width / this.origin.height;
 	var R = W / H;
 
@@ -751,10 +800,14 @@ CanvasDocument.prototype.fit = function(dom){
 		_w = W;
 		_h = W / r;
 		r = W / this.origin.width;
+		cvs.style.left = '0px';
+		cvs.style.top = Math.floor((H - _h) * .5) + 'px';
 	} else {
 		_h = H;
 		_w = H * r;
 		r = H / this.origin.height;
+		cvs.style.left = Math.floor((W - _w) * .5) + 'px';
+		cvs.style.top = '0px';
 	}
 
 	cvs.width = Math.floor(_w);
