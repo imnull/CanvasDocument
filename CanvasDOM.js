@@ -153,11 +153,11 @@ cvsEventObject.prototype = {
 		this.keys[eventName].push(key);
 		return key;
 	},
-	fire : function(en){
+	fire : function(en, e, pos){
 		if(!this.hash[en]) return;
 		var h = this.hash[en], k = this.keys[en], i = k.length, t = this.target;
 		while(--i >= 0){
-			h[k[i]].call(t);
+			h[k[i]].apply(t, [e, pos]);
 		}
 	},
 	remove : function(eventName, key){
@@ -330,14 +330,14 @@ CanvasGenericElement.prototype = {
 
 		return this;
 	},
-	fit : function(r){
+	Fit : function(r){
 		r = r || 1;
 		//this.config.x *= r;
 		//this.config.y *= r;
 		this.radio = r;
 
 		this.each(function(c){
-			c.fit(r);
+			c.Fit(r);
 		})
 
 		return this;
@@ -701,6 +701,7 @@ function CanvasDocument(id){
 	if(!cvs) cvs = document.createElement('canvas');
 	this.context = cvs.getContext('2d');
 	this.ownerDocument = this;
+	this.evtr = 1;
 	this.origin = {
 		width : cvs.width,
 		height : Math.max(cvs.height, 1),
@@ -709,12 +710,12 @@ function CanvasDocument(id){
 	var _ = this;
 	cvs.addEventListener(MOUSE_DOWN, function(e){
 		var pos = _evt.pos(e);
-		var el = _.capture(pos.x, pos.y);
+		var el = _.capture(pos.x * _.evtr, pos.y * _.evtr);
 		el.fireEvent('mousedown', e, pos);
 	}, false);
 	cvs.addEventListener(MOUSE_UP, function(e){
 		var pos = _evt.pos(e);
-		var el = _.capture(pos.x, pos.y);
+		var el = _.capture(pos.x * _.evtr, pos.y * _.evtr);
 		el.fireEvent('mouseup', e, pos);
 	}, false);
 }
@@ -780,41 +781,62 @@ CanvasDocument.prototype.draw = function(before, after){
 CanvasDocument.prototype.check = function(){
 	return true;
 }
-CanvasDocument.prototype.fit = function(dom){
-	dom = dom || this.context.canvas.parentNode;
-	if(!dom || (dom != w && dom.nodeType != 1)) return;
-	var W, H, cvs = this.context.canvas;
-	if(dom === window){
-		W = w.innerWidth;
+
+function getRate (dom, o) {
+	var dom = dom || window;
+	if(!dom) return;
+	var W, H;
+	if(dom === document.body || dom === w){
+		W = Math.max(w.innerWidth, 1);
 		H = Math.max(w.innerHeight, 1);
-	} else {
-		W = dom.offsetWidth;
+	} else if(dom.nodeType === 1) {
+		W = Math.max(dom.offsetWidth, 1);
 		H = Math.max(dom.offsetHeight, 1);
-	}
-	cvs.style.position = 'absolute';
-	var r = this.origin.width / this.origin.height;
-	var R = W / H;
-
-	var _w, _h;
+	} else  return;
+	var r = o.width / o.height, R = W / H, _w, _h, _t = 0, _l = 0;
 	if(r > R){
-		_w = W;
-		_h = W / r;
-		r = W / this.origin.width;
-		cvs.style.left = '0px';
-		cvs.style.top = Math.floor((H - _h) * .5) + 'px';
+		_t = (H - (_h = (_w = W) / r)) * .5;
+		r = o.width / W;
 	} else {
-		_h = H;
-		_w = H * r;
-		r = H / this.origin.height;
-		cvs.style.left = Math.floor((W - _w) * .5) + 'px';
-		cvs.style.top = '0px';
+		_l = (W - (_w = (_h = H) * r)) * .5;
+		r = o.height / H;
 	}
-
-	cvs.width = Math.floor(_w);
-	cvs.height = Math.floor(_h);
-
-	return cp.fit.call(this, r);
+	return { top : _t >> 0, left : _l >> 0, width : _w >> 0, height : _h >> 0, rate : r }
 }
+
+CanvasDocument.prototype.Fit = function(dom){
+	this.evtr = 1;
+	var cvs = this.context.canvas;
+	var rt = getRate(dom || cvs.parentNode, this.origin)
+	if(!rt) return;
+	cvs.style.position = 'absolute';
+	cvs.style.left = rt.left + 'px';
+	cvs.style.top = rt.top + 'px';
+	cvs.width = rt.width;
+	cvs.height = rt.height;
+	cvs.style.width = cvs.style.height = '';
+	var r = 1 / rt.rate;
+	rt = cvs = null;
+	return cp.Fit.call(this, r);
+}
+CanvasDocument.prototype.fit = function(dom){
+	if(this.radio != 1){
+		cp.Fit.call(this, 1);
+	}
+	var cvs = this.context.canvas;
+	var rt = getRate(dom || cvs.parentNode, this.origin)
+	if(!rt) return;
+	cvs.style.position = 'absolute';
+	cvs.style.left = rt.left + 'px';
+	cvs.style.top = rt.top + 'px';
+	cvs.style.width = rt.width + 'px';
+	cvs.style.height = rt.height + 'px';
+	cvs.width = this.origin.width;
+	cvs.height = this.origin.height;
+	this.evtr = rt.rate;
+	rt = cvs = null;
+}
+
 
 
 w.CanvasGenericElement = CanvasGenericElement;

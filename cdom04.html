@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+	<title></title>
+	<style type="text/css">
+		body{ margin: 0px; overflow: hidden; }
+		canvas { border:0px solid #000; background-color: #eee; }
+		div{ position: absolute; z-index: 999; background-color: #ff0; height: 20px; width: 100%; font-size: 12px; opacity: .7; border-bottom: 3px solid #000; }
+	</style>
+	<script type="text/javascript" src="CanvasDOM.js"></script>
+</head>
+
+<body>
+
+<canvas id="test" width="600" height="400"></canvas>
+<div>
+	<input type="radio" name="fitgroup" id="fit1" value="fit" onclick="set(this)" checked />
+	<label for="fit1">CSS适应 维持原有像素</label>
+	<input type="radio" name="fitgroup" id="fit2" value="Fit" onclick="set(this)" />
+	<label for="fit2">调整Canvas像素适应 改变像素</label>
+</div>
+
+<script type="text/javascript">
+
+var doc = new CanvasDocument('test');
+ani.regdoc(doc);
+var button1 = doc.createPanel();
+button1.moveTo(100, 120);
+button1.content('click me');
+var button3 = doc.createButton();
+button3.moveTo(200, 200);
+button3.content('new button');
+var circle = doc.createCircle();
+circle.moveTo(550, 50);
+circle.content('click me');
+var key, circleFn = function(){
+	this.removeEvent('mouseup', key);
+	circle.$moveTo(circle.config.x, 350, 1000, 'bounce_out', function(){
+		circle.$moveTo(circle.config.x, 50, 1000, 'elastic_out', function(){
+			key = circle.mouseup(circleFn);
+		});
+	}, 500);
+}
+key = circle.mouseup(circleFn);
+var key2, buttonFn = function(){
+	this.removeEvent('mouseup', key2);
+	button1.$scaleTo(0.2, 0.2, 1000, 'bounce_out', function(){
+		button1.$scaleTo(1, 1, 1000, 'elastic_out', function(){
+			key2 = button1.mouseup(buttonFn);
+		});
+	}, 200);
+}
+key2 = button1.mouseup(buttonFn);
+var key3, buttonFn3 = function(){
+	this.removeEvent('mouseup', key3);
+	this.config.fillStyle = '#cccccc';
+	button3.$scaleTo(0.2, 0.2, 1000, 'bounce_out', function(){
+		button3.$scaleTo(1, 1, 1000, 'elastic_out', function(){
+			key3 = button3.mouseup(buttonFn3);
+		});
+	}, 200);
+}
+button3.mousedown(function(){
+	if(!this.ownerDocument) return;
+	this.config.fillStyle = '#ffffff';
+	this.ownerDocument.draw();
+})
+key3 = button3.mouseup(buttonFn3);
+doc.append(circle);
+doc.append(button1);
+doc.append(button3);
+var pb = doc.createProgressBar();
+pb.set(1, 100);
+pb.moveTo(300, 300)
+doc.append(pb);
+
+function a(el){
+	var w = doc.context.canvas.width * Math.random();
+	var h = doc.context.canvas.height * Math.random();
+	el.$moveTo(w, h, 2000, 'bounce_out', function(){ a(el)(); }, 500);
+	return function(){ a(el)(); };
+}
+function b(el){
+
+}
+
+for(var i = 0; i < 10; i++){
+
+	(function(e){
+		doc.append(e);
+		var kk, fn = function(){
+			this.removeEvent('mousedown', kk);
+			e.$scaleTo(0.2, 0.2, 1000, 'bounce_out', function(){
+				e.$scaleTo(1, 1, 1000, 'elastic_out', function(){
+					kk = e.mousedown(fn);
+				});
+			}, 200);
+		}
+		kk = e.mousedown(fn);
+		function aaa(){
+			var w = doc.origin.width * Math.random() * .9;
+			var h = doc.origin.height * Math.random() * .9;
+			e.$moveTo(w, h, 1000 * Math.random() + 1000, 'quart_out', aaa, 1000 * Math.random() + 500);
+		}
+		aaa();
+	})(doc.createCircle(20, 20, 50 * Math.random() + 5))
+	
+}
+
+doc.mousedown(function(e, pos){
+	if(!pos) return;
+	(function(e){
+		doc.append(e);
+		var kk, fn = function(){
+			this.removeEvent('mousedown', kk);
+			e.$scaleTo(0.2, 0.2, 1000, 'bounce_out', function(){
+				e.$scaleTo(1, 1, 1000, 'elastic_out', function(){
+					kk = e.mousedown(fn);
+				});
+			}, 200);
+		}
+		kk = e.mousedown(fn);
+		function aaa(){
+			var w = doc.origin.width * Math.random() * .9;
+			var h = doc.origin.height * Math.random() * .9;
+			e.$moveTo(w, h, 1000 * Math.random() + 1000, 'quart_out', aaa, 1000 * Math.random() + 500);
+		}
+		aaa();
+	})(doc.createCircle(pos.x * doc.evtr, pos.y * doc.evtr, 50 * Math.random() + 5))
+})
+
+
+var op = 'fit';
+function fit(){
+	doc[op](window)
+}
+function set(o){
+	op = o.value;
+	fit();
+}
+
+ani.reg(function(s){
+	pb.set(s % 100, 100);
+	doc.draw();
+})
+
+fit();
+window.onresize = function(){
+	fit();
+}
+
+</script>
+
+
+</body>
+
+
+</html>
