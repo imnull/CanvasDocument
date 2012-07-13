@@ -15,9 +15,9 @@
 
 <canvas id="test" width="600" height="400"></canvas>
 <div>
-	<input type="radio" name="fitgroup" id="fit1" value="fit" onclick="set(this)" checked />
+	<input type="radio" name="fitgroup" id="fit1" value="fit" onclick="set(this)" />
 	<label for="fit1">CSS适应 维持原有像素</label>
-	<input type="radio" name="fitgroup" id="fit2" value="Fit" onclick="set(this)" />
+	<input type="radio" name="fitgroup" id="fit2" value="Fit" onclick="set(this)" checked />
 	<label for="fit2">调整Canvas像素适应 改变像素</label>
 </div>
 
@@ -86,21 +86,18 @@ function b(el){
 }
 
 for(var i = 0; i < 10; i++){
-
 	(function(e){
 		doc.append(e);
 		var kk, fn = function(){
 			this.removeEvent('mousedown', kk);
 			e.$scaleTo(0.2, 0.2, 1000, 'bounce_out', function(){
-				e.$scaleTo(1, 1, 1000, 'elastic_out', function(){
-					kk = e.mousedown(fn);
-				});
+				doc.remove(e);
 			}, 200);
 		}
 		kk = e.mousedown(fn);
 		function aaa(){
-			var w = doc.origin.width * Math.random() * .9;
-			var h = doc.origin.height * Math.random() * .9;
+			var w = doc.origin.width * Math.random();
+			var h = doc.origin.height * Math.random();
 			e.$moveTo(w, h, 1000 * Math.random() + 1000, 'quart_out', aaa, 1000 * Math.random() + 500);
 		}
 		aaa();
@@ -115,25 +112,23 @@ doc.mousedown(function(e, pos){
 		var kk, fn = function(){
 			this.removeEvent('mousedown', kk);
 			e.$scaleTo(0.2, 0.2, 1000, 'bounce_out', function(){
-				e.$scaleTo(1, 1, 1000, 'elastic_out', function(){
-					kk = e.mousedown(fn);
-				});
+				doc.remove(e);
 			}, 200);
 		}
 		kk = e.mousedown(fn);
 		function aaa(){
-			var w = doc.origin.width * Math.random() * .9;
-			var h = doc.origin.height * Math.random() * .9;
+			var w = doc.origin.width * Math.random();
+			var h = doc.origin.height * Math.random();
 			e.$moveTo(w, h, 1000 * Math.random() + 1000, 'quart_out', aaa, 1000 * Math.random() + 500);
 		}
 		aaa();
-	})(doc.createCircle(pos.x * doc.evtr, pos.y * doc.evtr, 50 * Math.random() + 5))
+	})(doc.createCircle(pos.x, pos.y, 50 * Math.random() + 5))
 })
 
 
-var op = 'fit';
+var op = 'Fit';
 function fit(){
-	doc[op](window)
+	doc[op](window);
 }
 function set(o){
 	op = o.value;

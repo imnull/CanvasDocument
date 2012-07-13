@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<style type="text/css">
+		body{ margin: 0px; overflow: hidden; }
+		canvas { border:0px solid #000; background-color: #eee; }
+	</style>
+</head>
+
+<body>
+
+<canvas id="test" width="600" height="400"></canvas>
+
+<script type="text/javascript">
+
+
+(function(w){
+
+function ResourceLoad(){
+	this.hash = {};
+}
+ResourceLoad.prototype = {
+	load : function(json){
+		if(!json) return;
+		var p, h = this.hash;
+		for(p in json){
+			if(p in h && h[p].locked) throw 'The key [' + p + '] is locked';
+			h[p] = { url : json[p] }
+		}
+		p = h = null;
+		console.log(this.hash)
+		this.$();
+	},
+	$ : function(){
+		var p, h = this.hash, n, _ = this, c = 0;
+		for(p in h){
+			n = h[p];
+			switch(n.state){
+				case 4:
+					break;
+				case 1:
+					c += 1;
+					break;
+				default:
+					c += 1;
+					n.state = 1;
+					n.locked = true;
+					n.img = (function(_n){
+						var i = new Image();
+						i.onload = function(){
+							_n.state = 4;
+							delete _n.state;
+							_.$();
+						}
+						i.src = _n.url;
+						return i;
+					})(n);
+					break;
+			}
+			
+		}
+		if(c < 1 && typeof _.onload === 'function') _.onload(this.hash);
+		n = p = h = null;
+	}
+}
+
+w.ResourceLoad = ResourceLoad;
+
+})(window);
+
+var rl = new ResourceLoad();
+rl.onload = function(r){
+	console.log(r);
+}
+rl.load({
+	'baidu' : 'http://www.baidu.com/img/baidu_sylogo1.gif'
+})
+console.log(rl)
+
+</script>
+
+
+</body>
+
+
+</html>

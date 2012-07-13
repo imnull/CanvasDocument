@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+	<title></title>
+	<style type="text/css">
+		body{ margin: 0px; overflow: hidden; }
+		canvas { border:0px solid #000; background-color: #aaa; }
+		div{ position: absolute; z-index: 999; background-color: #ff0; height: 20px; width: 100%; font-size: 12px; opacity: .7; border-bottom: 3px solid #000; }
+	</style>
+	<script type="text/javascript" src="CanvasDOM.js"></script>
+</head>
+
+<body>
+
+<canvas id="test" width="600" height="400"></canvas>
+
+<script type="text/javascript">
+
+var doc = new CanvasDocument('test');
+ani.regdoc(doc);
+
+var pb = doc.createProgressBar();
+pb.set(1, 100);
+pb.moveTo(300, 50)
+doc.append(pb);
+
+var pb2 = doc.createProgressBar2();
+pb2.set(1, 100);
+pb2.moveTo(300, 100)
+doc.append(pb2);
+
+var pb3 = doc.createProgressBar();
+pb3.set(1, 100);
+pb3.moveTo(300, 150)
+doc.append(pb3);
+pb3.config.outerBorder = 2;
+pb3.config.fillStyle = '#000'
+pb3.config.subStyle = '#fff'
+
+var pb4 = doc.createProgressBar2();
+pb4.set(1, 100);
+pb4.moveTo(300, 200)
+pb4.config.lineWidth = 0;
+doc.append(pb4);
+
+var op = 'Fit';
+function fit(){
+	doc[op](window);
+}
+function set(o){
+	op = o.value;
+	fit();
+}
+
+ani.reg(function(s){
+	pb.set(s % 100, 100);
+	pb2.set(s % 150, 150);
+	pb3.set(s % 180, 180);
+	pb4.set(s % 210, 210);
+})
+
+fit();
+window.onresize = function(){
+	fit();
+}
+
+</script>
+
+
+</body>
+
+
+</html>
