@@ -2,81 +2,44 @@
 <html>
 <head>
 	<title></title>
-	<style type="text/css">
-		body{ margin: 0px; overflow: hidden; }
-		canvas { border:0px solid #000; background-color: #eee; }
-	</style>
+	<script type="text/javascript" src="ResourceLoader.js"></script>
 </head>
 
 <body>
 
-<canvas id="test" width="600" height="400"></canvas>
+<div id="log"></div>
 
 <script type="text/javascript">
 
 
-(function(w){
-
-function ResourceLoad(){
-	this.hash = {};
-}
-ResourceLoad.prototype = {
-	load : function(json){
-		if(!json) return;
-		var p, h = this.hash;
-		for(p in json){
-			if(p in h && h[p].locked) throw 'The key [' + p + '] is locked';
-			h[p] = { url : json[p] }
-		}
-		p = h = null;
-		console.log(this.hash)
-		this.$();
-	},
-	$ : function(){
-		var p, h = this.hash, n, _ = this, c = 0;
-		for(p in h){
-			n = h[p];
-			switch(n.state){
-				case 4:
-					break;
-				case 1:
-					c += 1;
-					break;
-				default:
-					c += 1;
-					n.state = 1;
-					n.locked = true;
-					n.img = (function(_n){
-						var i = new Image();
-						i.onload = function(){
-							_n.state = 4;
-							delete _n.state;
-							_.$();
-						}
-						i.src = _n.url;
-						return i;
-					})(n);
-					break;
-			}
-			
-		}
-		if(c < 1 && typeof _.onload === 'function') _.onload(this.hash);
-		n = p = h = null;
-	}
-}
-
-w.ResourceLoad = ResourceLoad;
-
-})(window);
-
-var rl = new ResourceLoad();
+var rl = new ResourceLoader();
 rl.onload = function(r){
-	console.log(r);
+	document.getElementById('log').innerHTML += '<p>done</p>';
+	console.log('done');
+}
+rl.onloading = function(c, t){
+	document.getElementById('log').innerHTML += '<p>' + c + '/' + t + ' [' + Math.floor(c / t * 100) + '%]' + '</p>';
+	console.log(c, t);
+}
+rl.onerror = function(name, url){
+	document.getElementById('log').innerHTML += '<p>ERROR : Resource load failed. ['
+		+ name + ' : ' + url + ']</p>';
+	console.log('ERROR : Resource load failed. [' + name + ' : ' + url + ']');
 }
 rl.load({
-	'baidu' : 'http://www.baidu.com/img/baidu_sylogo1.gif'
+	'baidu' : 'http://www.baidu.com/img/baidu_sylogo1.giff',
+	'test1' : 'https://www.google.com.hk/logos/2012/klimt12-sr.png',
+	'test2' : 'http://img.xptheme.com.cn/allimg/090425/0242560.jpg',
+	'test3' : 'http://www.guilin98.com/upfile/route/2006/07/10/d9414183690.jpg',
+	'test4' : 'http://img2.fengniao.com/product/19/649/ceQ4nfaPUF8Wg.jpg',
+	'test5' : 'http://www.djy.gov.cn/upload/20090116_110316_136.jpg',
+	'test6' : 'http://img.ivsky.com/Photo/UploadFiles/2010-6/201063113215692.jpg',
+	'test7' : 'http://img.wallpapersking.com/d5/0/3/2006110909330234382.jpg',
+	'test8' : 'http://img.ivsky.com/img/bizhi/img/201009/04/xinjiang-028.jpg',
+	'test9' : 'http://www.51766.com/img/shlycsgn/1322706429715.jpg',
+	'test10' : 'http://pic2.nipic.com/20090408/2137336_070710069_2.jpg',
+	'test11' : 'http://photo.aiutrip.com/pic/2009-11-14/155810162.jpg'
 })
-console.log(rl)
 
 </script>
 
