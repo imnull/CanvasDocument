@@ -15,8 +15,27 @@ var $d = {
 		}
 		return false;
 	},
-	open : function(key){ return this.$(key, 'open'); },
-	close : function(key){ return this.$(key, 'close'); }
+	regdoc : function(doc){
+		if(!this.docs) this.docs = [];
+		this.docs.push(doc);
+		return doc;
+	},
+	flush : function(){
+		if(!this.docs) return;
+		for(var i = 0, len = this.docs.length; i < len; i++){
+			this.docs[i].clear();
+			this.docs[i].draw();
+		}
+	},
+	open : function(key){
+		this.flush();
+		return this.$(key, 'open');
+	},
+	close : function(key){
+		this.flush();
+		var b = this.$(key, 'close');
+		return b;
+	}
 }
 
 w.director = w.gd = $d;

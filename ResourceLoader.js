@@ -26,9 +26,14 @@ RL.prototype = {
 			this.add(p, json[p]);
 		}
 		p = null;
-		this.$();
+		this._work();
 	},
-	$ : function(){
+	$ : function(key){
+		if(key in this.hash)
+			return this.hash[key];
+		throw 'No key [' + key + '] in this ResourceLoader';
+	},
+	_work : function(){
 		var p, h = this.hash, n, _ = this, c = 0;
 		for(p in h){
 			n = h[p];
@@ -48,7 +53,7 @@ RL.prototype = {
 						var i = new Image();
 						i.onload = function(){
 							_n.state = 4;
-							_.$();
+							_._work();
 						}
 						i.onerror = function(e){
 							if(typeof i.error_retry != 'number'){
@@ -67,7 +72,7 @@ RL.prototype = {
 								if(typeof _.onerror === 'function'){
 									_.onerror(_p, i.src);
 								}
-								_.$();
+								_._work();
 							}
 						}
 						i.src = _n.url;
@@ -76,7 +81,7 @@ RL.prototype = {
 								_n.state = 8;
 								console.log('Resource loading timeout. [' + _p + '] ' + i.src);
 								i = null;
-								_.$();
+								_._work();
 							}
 							clearTimeout(timeout);
 							timeout = null;
@@ -113,9 +118,9 @@ rr.RetryDelay = 700;
 rr.prototype = {
 	load : function(json){
 		this.ht.load(json, function(v){ return { url : v }; });
-		this.$();
+		this._work();
 	},
-	$ : function(){
+	_work : function(){
 		var c = 0, _ = this;
 		this.ht.each(function(n, p){
 			switch(n.state){
@@ -131,7 +136,7 @@ rr.prototype = {
 					var i = new Image();
 					i.onload = function(){
 						n.state = 4;
-						_.$();
+						_._work();
 					}
 					i.onerror = function(e){
 						if(typeof i.retry != 'number'){
@@ -152,7 +157,7 @@ rr.prototype = {
 							if(typeof _.onerror === 'function'){
 								_.onerror(p, i.src);
 							}
-							_.$();
+							_._work();
 						}
 					}
 					i.src = n.url;

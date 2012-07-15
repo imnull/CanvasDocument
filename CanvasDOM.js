@@ -181,7 +181,9 @@ function CanvasGenericElement(config){
 		text : '',
 		lineWidth : 0,
 		lineCap : 'butt',
-		rotateAngle : 0,
+		rotate : 0,
+		rotateX : 0,
+		rotateY : 0,
 		scaleX : 1,
 		scaleY : 1,
 		globalAlpha : 1,
@@ -237,12 +239,15 @@ CanvasGenericElement.prototype = {
 		n = null;
 		return false;
 	},
+	_rotate : function(ctx){
+		ctx.rotate(this.config.rotate);
+	},
 	draw : function(ctx){
 		var conf = this.config, rate = this.ownerDocument.rate;
 		ctx.save();
 
 		ctx.translate(conf.x * rate, conf.y * rate);
-		ctx.rotate(conf.rotate);
+		this._rotate(ctx);
 		ctx.scale(conf.scaleX, conf.scaleY);
 
 		this.path(ctx);
@@ -487,6 +492,30 @@ var Panel = _inherit('Panel', CanvasGenericElement, {
 		this.config.height = h;
 		return this;
 	},
+	fill : function(ctx){
+		cp.fill.call(this, ctx);
+		if(!!this.image){
+			var w = this.config.width, h = this.config.height;
+			var x = w * -.5, y = h * -.5;
+			ctx.drawImage(this.image, x, y, w, h);
+		}
+	},
+	_rotate : function(ctx){
+		var conf = this.config, rate = this.ownerDocument.rate;
+		var w = conf.width * .5, h = conf.height * .5;
+		var x = w * conf.rotateX * rate;
+		var y = h * conf.rotateY * rate;
+		ctx.translate(x, y);
+		cp._rotate.call(this, ctx);
+		ctx.translate(-x, -y);
+	},
+	rotate : function(deg, rotateX, rotateY){
+		var conf = this.config;
+		conf.rotate = deg * Math.PI / 180
+		conf.rotateX = rotateX || conf.rotateX;
+		conf.rotateY = rotateY || conf.rotateY;
+		return this;
+	},
 	check : function(x, y){
 		var r = this.ownerDocument.rate, c = this.config;
 		var X = c.x * r, Y = c.y * r, W = c.width * r, H = c.height * r;
@@ -497,7 +526,7 @@ var Panel = _inherit('Panel', CanvasGenericElement, {
 			&& y <= Y + H * .5;
 		return b;
 	}
-}, { config : { width : 100, height : 100 } });
+}, { config : { width : 100, height : 100, rotateX : 0, rotateY : 0 } });
 
 var Circle = _inherit('Circle', CanvasGenericElement, {
 	path : function(ctx){

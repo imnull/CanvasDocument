@@ -78,3 +78,4 @@ HashTable.prototype = {
 		return b;
 	}
 }
+HashTable.prototype.$ = HashTable.prototype.get;
