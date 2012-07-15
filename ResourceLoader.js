@@ -3,9 +3,11 @@
 var RL = function ResourceLoader(){
 	this.hash = {};
 	this.total = 0;
+	this.onloadfired = false;
 }
 RL.RetryTimes = 5;
 RL.RetryDelay = 700;
+RL.Timeout = 10000;
 RL.prototype = {
 	add : function(key, url){
 		if(!(key in this.hash)){
@@ -15,6 +17,7 @@ RL.prototype = {
 			else console.log('Override key [' + key + ']')
 		}
 		this.hash[key] = { url : url };
+		this.onloadfired = false;
 	},
 	load : function(json){
 		if(!json || typeof json != 'object') return;
@@ -30,8 +33,9 @@ RL.prototype = {
 		for(p in h){
 			n = h[p];
 			switch(n.state){
-				case 4:
-				case 9:
+				case 4: //success
+				case 8: //timeout
+				case 9: //error
 					break;
 				case 1:
 					c += 1;
@@ -67,12 +71,25 @@ RL.prototype = {
 							}
 						}
 						i.src = _n.url;
+						var timeout = setTimeout(function(){
+							if(_n.state != 4 && _n.state != 9){
+								_n.state = 8;
+								console.log('Resource loading timeout. [' + _p + '] ' + i.src);
+								i = null;
+								_.$();
+							}
+							clearTimeout(timeout);
+							timeout = null;
+						}, RL.Timeout);
 						return i;
 					})(n, p);
 					break;
 			}
 		}
-		if(c < 1 && typeof _.onload === 'function') _.onload(_.hash);
+		if(c < 1 && !this.onloadfired && typeof _.onload === 'function'){
+			this.onloadfired = true;
+			_.onload(_.hash);
+		}
 		else if(typeof _.onloading === 'function') {
 			_.onloading(_.total - c, _.total, _.hash)
 		}
