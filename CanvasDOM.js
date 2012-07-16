@@ -370,10 +370,10 @@ CanvasGenericElement.prototype = {
 						var st = setTimeout(function(){
 							clearTimeout(st);
 							st = null;
-							callback(_);
+							callback.call(_, _);
 						}, delay)
 					} else {
-						callback(_);
+						callback.call(_, _);
 					}
 				}
 				return true;
@@ -461,7 +461,7 @@ var _twe = {
 		return c/2*((t-=2)*t*(((s*=(1.525))+1)*t + s) + 2) + b;
 	},
 	bounce_in : function(t,b,c,d){
-		return c - _twe['bounce$out'](d - t, 0, c, d) + b;
+		return c - _twe['bounce_out'](d - t, 0, c, d) + b;
 	},
 	bounce_out : function(t,b,c,d){
 		if ((t/=d) < (1/2.75)) {
@@ -475,8 +475,8 @@ var _twe = {
 		}
 	},
 	bounce_io : function(t,b,c,d){
-		if (t < d/2) return _twe['bounce$in'](t * 2, 0, c, d) * .5 + b;
-		else return _twe['bounce$out'](t * 2 - d, 0, c, d) * .5 + c * .5 + b;
+		if (t < d/2) return _twe['bounce_in'](t * 2, 0, c, d) * .5 + b;
+		else return _twe['bounce_out'](t * 2 - d, 0, c, d) * .5 + c * .5 + b;
 	}
 }
 
