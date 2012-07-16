@@ -34,7 +34,11 @@ gd.add('welcome', function open(g){
 		gd.close('welcome');
 	})
 
+	g.add('index_background_dom', bg);
+
+
 }, function close(g){
-	console.log('game.welcome.closed.')
-	console.log(g)
+	//console.log('game.welcome.closed.')
+	//console.log(g);
+	gd.open('modes');
 });
