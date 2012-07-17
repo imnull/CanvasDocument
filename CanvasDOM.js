@@ -353,7 +353,7 @@ CanvasGenericElement.prototype = {
 	removeEvent : function(eventName, key){
 		this.events.remove(eventName, key);
 	},
-	$moveTo : function(x, y, dur, m, callback, delay){
+	$moveTo : function(x, y, dur, m, callback, delay, predelay){
 		var f = _twe[m || 'quad_out'];
 		var X = this.config.x;
 		var Y = this.config.y;
@@ -361,26 +361,34 @@ CanvasGenericElement.prototype = {
 		var dy = y - Y;
 		var step = _ani.S(dur);
 		var _ = this;
-		_ani.reg(function(c){
-			_.moveTo(f(c, X, dx, step), f(c, Y, dy, step));
-			if(c >= step){
-				_.moveTo(x, y);
-				if(typeof callback === 'function'){
-					if(delay && delay > 0){
-						var st = setTimeout(function(){
-							clearTimeout(st);
-							st = null;
+		var fn = function(){ _ani.reg(
+			function(c){
+				_.moveTo(f(c, X, dx, step), f(c, Y, dy, step));
+				if(c >= step){
+					_.moveTo(x, y);
+					if(typeof callback === 'function'){
+						if(delay && delay > 0){
+							var st = setTimeout(function(){
+								clearTimeout(st);
+								st = null;
+								callback.call(_, _);
+							}, delay)
+						} else {
 							callback.call(_, _);
-						}, delay)
-					} else {
-						callback.call(_, _);
+						}
 					}
+					return true;
 				}
-				return true;
-			}
-		});
+			});
+		}
+		predelay = predelay || 0;
+		if(predelay > 0){
+			setTimeout(fn, predelay);
+		} else {
+			fn();
+		}
 	},
-	$scaleTo : function(x, y, dur, m, callback, delay){
+	$scaleTo : function(x, y, dur, m, callback, delay, predelay){
 		var f = _twe[m || 'quad_out'];
 		var X = this.config.scaleX;
 		var Y = this.config.scaleY;
@@ -388,24 +396,32 @@ CanvasGenericElement.prototype = {
 		var dy = y - Y;
 		var step = _ani.S(dur);
 		var _ = this;
-		_ani.reg(function(c){
-			_.scale(f(c, X, dx, step), f(c, Y, dy, step));
-			if(c >= step){
-				_.scale(x, y);
-				if(typeof callback === 'function'){
-					if(delay && delay > 0){
-						var st = setTimeout(function(){
-							clearTimeout(st);
-							st = null;
+		var fn = function(){_ani.reg(
+			function(c){
+				_.scale(f(c, X, dx, step), f(c, Y, dy, step));
+				if(c >= step){
+					_.scale(x, y);
+					if(typeof callback === 'function'){
+						if(delay && delay > 0){
+							var st = setTimeout(function(){
+								clearTimeout(st);
+								st = null;
+								callback(_);
+							}, delay)
+						} else {
 							callback(_);
-						}, delay)
-					} else {
-						callback(_);
+						}
 					}
+					return true;
 				}
-				return true;
-			}
-		});
+			});
+		}
+		predelay = predelay || 0;
+		if(predelay > 0){
+			setTimeout(fn, predelay);
+		} else {
+			fn();
+		}
 	}
 }
 
@@ -497,7 +513,16 @@ var Panel = _inherit('Panel', CanvasGenericElement, {
 		if(!!this.image){
 			var w = this.config.width, h = this.config.height;
 			var x = w * -.5, y = h * -.5;
-			ctx.drawImage(this.image, x, y, w, h);
+			if(!this.config.imageCoord){
+				ctx.drawImage(this.image, x, y, w, h);
+			} else {
+				var ic = this.config.imageCoord;
+				var _x = ic.offsetX || 0, _y = ic.offsetY || 0;
+				ctx.drawImage(this.image
+					, ic.x, ic.y, ic.width, ic.height
+					, x + _x, y + _y, w - _x * 2, h - _y * 2
+					);
+			}
 		}
 	},
 	_rotate : function(ctx){
@@ -527,6 +552,38 @@ var Panel = _inherit('Panel', CanvasGenericElement, {
 		return b;
 	}
 }, { config : { width : 100, height : 100, rotateX : 0, rotateY : 0 } });
+
+var RoundPanel = _inherit('RoundPanel', Panel, {
+	path : function(ctx){
+		var W = this.config.width * this.ownerDocument.rate * .5;
+		var H = this.config.height * this.ownerDocument.rate * .5;
+		var R = Math.min(Math.min(W, H), this.config.round) >> 0;
+		var pi = Math.PI;
+		ctx.beginPath();
+		ctx.moveTo(-W, -H + R);
+		ctx.arc(-W + R, -H + R, R, pi, pi * 1.5, false);
+		ctx.lineTo(W - R, -H);
+		ctx.arc(W - R, -H + R, R, pi * 1.5, pi * 2, false);
+		ctx.lineTo(W, H - R);
+		ctx.arc(W - R, H - R, R, 0, pi * .5, false);
+		ctx.lineTo(-W + R, H);
+		ctx.arc(-W + R, H - R, R, pi * .5, pi, false);
+		ctx.closePath();
+
+	},
+	check : function(x, y){
+		var r = this.ownerDocument.rate, c = this.config;
+		var X = c.x * r, Y = c.y * r, W = c.width * r, H = c.height * r;
+		//console.log(X, Y, W, H)
+		var b = x >= X - W * .5
+			&& x <= X + W * .5
+			&& y >= Y - H * .5
+			&& y <= Y + H * .5;
+		return b;
+	}
+}, { config : { width : 100, height : 100, rotateX : 0, rotateY : 0, round : 5 } });
+
+
 
 var Circle = _inherit('Circle', CanvasGenericElement, {
 	path : function(ctx){
@@ -806,6 +863,13 @@ CanvasDocument.prototype.createPanel = function(x, y, w, h){
 	p.ownerDocument = this;
 	return p;
 }
+CanvasDocument.prototype.createRoundPanel = function(x, y, w, h, r){
+	var p = new RoundPanel({
+		x : x || 0, y : y || 0, width : w || 100, height : h || 100, round : r || 10
+	});
+	p.ownerDocument = this;
+	return p;
+}
 CanvasDocument.prototype.createCircle = function(x, y, r){
 	var p = new Circle({
 		x : x || 0, y : y || 0, radio : r || 50
@@ -918,5 +982,6 @@ w.CanvasGenericElement = CanvasGenericElement;
 w.CanvasDocument = CanvasDocument;
 w.ani = _ani;
 w.evt = _evt;
+w.twe = _twe;
 
 })(window);
