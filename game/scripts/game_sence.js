@@ -5,65 +5,72 @@ gd.add('sence', function open(g){
 	var commonbg_img = rs.$('commonbg').img;
 	bg.image = commonbg_img;
 
-	var mode_plain_img = rs.$('mode_plain').img;
-	var mode_timer_img = rs.$('mode_timer').img;
-	var mode_endless_img = rs.$('mode_endless').img;
+	var w = doc.origin.width, h = doc.origin.height;
+	var sence = doc.createPanel(w * .5, h * .5, 280, 230);
+	var left = doc.createPanel(w * .1, h * .5, 100, 150);
+	var right = doc.createPanel(w * .9, h * .5, 100, 150);
+	var logos = [
+		rs.$('sence_fruit_logo').img,
+		rs.$('sence_letter_logo').img,
+		rs.$('sence_cartoon_logo').img
+	];
+	var sences = [ 'fruit', 'letter', 'cartoon' ];
+	var logo_index = 0;
 
-	var mode_plain = doc.createPanel(140, -60, 150, 100);
-	mode_plain.image = mode_plain_img;
-	mode_plain._name = 'plain';
-	var mode_timer = doc.createPanel(320, -60, 150, 100);
-	mode_timer.image = mode_timer_img;
-	mode_timer._name = 'timer';
-	var mode_endless = doc.createPanel(500, -60, 150, 100);
-	mode_endless.image = mode_endless_img;
-	mode_endless._name = 'endless';
+	sence.image = logos[logo_index];
+	left.image = rs.$('sence_button_left').img;
+	right.image = rs.$('sence_button_right').img;
 
-	mode_plain.config.fillStyle =
-	mode_timer.config.fillStyle = 
-	mode_endless.config.fillStyle = 'rgba(0,0,0,0)';
+	var return_button = doc.createPanel(20, 17, 30, 30);
+	return_button.image = rs.$('return_button').img;
 
-	function mode_callback(){
-		this._ready = true;
-		if(!mode_plain._ready || !mode_timer._ready || !mode_endless._ready) return;
-		mode_plain._event = mode_plain.mousedown(mode_mousedown);
-		mode_timer._event = mode_timer.mousedown(mode_mousedown);
-		mode_endless._event = mode_endless.mousedown(mode_mousedown);
-	}
+	return_button.config.fillStyle =
+	left.config.fillStyle =
+	right.config.fillStyle =
+	sence.config.fillStyle = 'rgba(0,0,0,0)';
 
-	function mode_mousedown(){
-		
-		var name = this._name;
-		switch(name){
-			case 'plain':
-				mode_plain.removeEvent('mousedown', mode_plain._event);
-				mode_timer.removeEvent('mousedown', mode_timer._event);
-				mode_endless.removeEvent('mousedown', mode_endless._event);
+	g.sence = sences[logo_index];
+	left.mousedown(function(){
+		logo_index = (logo_index + logos.length - 1) % logos.length;
+		sence.image = logos[logo_index];
+		g.sence = sences[logo_index];
+		doc.draw();
+	})
+	right.mousedown(function(){
+		logo_index = (logo_index + 1) % logos.length;
+		sence.image = logos[logo_index];
+		g.sence = sences[logo_index];
+		doc.draw();
+	})
+	sence.mousedown(function(){
+		gd.open('level');
+	})
+	return_button.mousedown(function(){
+		switch(gd.pagename){
+			case 'sence':
+				gd.open('modes');
 				break;
-			default:
-				alert('Not implement');
+			case 'level':
+				gd.open('sence');
+				break;
+			case 'playing':
+				gd.open('level');
 				break;
 		}
-		/*
-		var _ = this;
-		this.$scaleTo(.1, .1, 1000, 'bounce_out', function(){
-			_.$scaleTo(2, 2, 1000, 'elastic_in')
-		});
-		*/
-	}
-
-	mode_plain.$moveTo(140, 220, 500, 'back_out', mode_callback);
-	mode_timer.$moveTo(320, 220, 600, 'back_out', mode_callback);
-	mode_endless.$moveTo(500, 220, 700, 'back_out', mode_callback);
+	})
 
 	doc.append(bg);
-	doc.append(mode_plain);
-	doc.append(mode_timer);
-	doc.append(mode_endless);
+	doc.append(sence);
+	doc.append(left);
+	doc.append(right);
+	doc.append(return_button);
 	doc.draw();
 
+	if(!g.has('return')){
+		g.add('return', return_button);
+	}
 
 }, function close(g){
-	console.log('game.welcome.closed.')
+	console.log('game.sence.closed.')
 	console.log(g)
 });

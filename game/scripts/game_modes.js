@@ -39,6 +39,7 @@ gd.add('modes', function open(g){
 				mode_plain.removeEvent('mousedown', mode_plain._event);
 				mode_timer.removeEvent('mousedown', mode_timer._event);
 				mode_endless.removeEvent('mousedown', mode_endless._event);
+				gd.open('sence');
 				break;
 			default:
 				alert('Not implement');

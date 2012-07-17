@@ -6,9 +6,9 @@ gd.add('welcome', function open(g){
 
 	var w = doc.origin.width, h = doc.origin.height;
 
-	//background
+	//index-background
 	var bg = doc.createPanel(w * .5,h * .5, w, h);
-	bg.image = bgimg;
+	bg.image = rs.$('index_background').img;
 
 	//board
 	var board = doc.createPanel(370, 258, 130, 100);
