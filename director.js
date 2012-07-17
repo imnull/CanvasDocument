@@ -29,7 +29,11 @@ var $d = {
 	},
 	open : function(key){
 		this.flush();
-		return this.$(key, 'open');
+		if(this.$(key, 'open')){
+			this.pagename = key;
+		} else {
+			delete this.pagename;
+		}
 	},
 	close : function(key){
 		this.flush();
