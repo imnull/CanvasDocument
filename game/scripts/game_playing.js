@@ -14,7 +14,7 @@ gd.add('playing', function open(g){
 	var c = g.cardcount / 2;
 	var H = fitMul(g.cardcount);
 	var s = cardSize(H, g.cardcount / H, doc);
-	var waitms = c * 1000;
+	var waitms = c * 1000 * 1;
 
 	var cards = [];
 	for(var i = 0; i < c; i++){
@@ -37,10 +37,13 @@ gd.add('playing', function open(g){
 		card._face = card2._face = img;
 		cards.push(card);
 		cards.push(card2);
-		card._allok = card2._allok = function(){
-			return every(cards, function(c){ return !!c._in; });
+		card._allok = card2._allok = function(state){
+			return every(cards, function(c){ return c._state === state; });
 		}
 		card.$in = card2.$in = cardin;
+		card.$fall = card2.$fall = cardfall;
+		card.$turn = card2.$turn = cardturn;
+		card.id = card2.id = i;
 
 		map.splice(idx, 1);
 	}
@@ -50,28 +53,95 @@ gd.add('playing', function open(g){
 	each(cards, function(card, i){
 		var x = (i % H) * s.width + s.left;
 		var y = Math.floor(i / H) * s.height + s.top
-		card.$in(x, y, 720, 1500, i * 80, waitProg);
+		card.$in(x, y, 720, 1500, i * 80, waitProg, 1);
 		doc.append(card);
 	})
 
+	//记牌时间
 	function waitProg(){
 		doc.append(prog);
 		ani.reg(function(s, i){
 			prog.set(i, waitms);
 			if(i >= waitms){
 				doc.remove(prog);
+				turnBack();
 				return true;
 			}
 		})
 	}
 
-	var w = fitMul(g.cardcount);
+	//翻转到背面
+	function turnBack(){
+		each(cards, function(card, i){
+			card.$turn(0, 180, 500, 0, startGame, 2);
+		})
+	}
 
+	var pairA = null;
+	var pairB = null;
+	function startGame(){
+		each(cards, function(card){
+			card.evtkey = card.mousedown(manturncard);
+		})
+	}
+
+	function compair(){
+		if(pairA.id === pairB.id){
+			pairA.$in(0, -pairA.config.height, 0, 500, 0, function(){
+				doc.remove(this);
+				pairA = null;
+				//if(!cards.length) alert(0)
+			});
+			pairB.$in(0, -pairB.config.height, 0, 500, 0, function(){
+				doc.remove(this);
+				pairB = null
+				//if(!cards.length) alert(0)
+			});
+			var idx
+			idx = cards.indexOf(pairA);
+			cards.splice(idx, 1);
+			idx = cards.indexOf(pairB);
+			cards.splice(idx, 1);
+
+		} else {
+			var okA = false, okB = false;
+			pairA.$fall(800, 0, function(){
+				okA = true;
+				if(okA && okB){
+					pairA = pairB = null;
+				}
+			});
+			pairB.$fall(800, 0, function(){
+				okB = true;
+				if(okA && okB){
+					pairA = pairB = null;
+				}
+			});
+		}
+	}
+
+	function manturncard(){
+		if(pairA && pairB) return;
+		var _ = this;
+		if(!pairA){
+			pairA = _;
+		} else if(!pairB) {
+			if(pairA === _) return;
+			pairB = _;
+		}
+		_.$turn(180, 360, 500, 0, function(){
+			_.state = 11;
+			if(pairA && pairB && pairA.state === 11 && pairB.state === 11){
+				pairA.state = pairB.state = 5;
+				compair();
+			}
+		});
+	}
+
+	var w = fitMul(g.cardcount);
 
 	doc.append(g.$('return'));
 	doc.draw();
-
-
 
 }, function close(g){
 	console.log('game.level.closed.')
@@ -96,12 +166,54 @@ function every(arr, callback){
 	return b;
 }
 
-function cardin(x, y, a, dur, predelay, callback, mx, my, ma){
+function cardturn(a1, a2, dur, predelay, callback, checkstate){
+	var _ = this;
+	var step = ani.S(dur || 500);
+	var fa = twe['linear'];
+	var one = Math.PI / 180;
+	var da = a2 - a1;
+	var fn = function(){
+		ani.reg(function(c){
+			var scaleX = Math.cos(fa(c, a1, da, step) * one);
+			if(scaleX <= 0){
+				_.image = _._back;
+				delete _.config.imageCoord;
+			} else {
+				_.image = _._face;
+				_.config.imageCoord = _._coord;
+			}
+			_.scale(scaleX, 1);
+			if(c >= step){
+				if(typeof checkstate === 'number'){
+					_._state = checkstate;
+					if(_._allok(checkstate) && typeof callback === 'function'){
+						callback();
+					}
+				} else if(typeof callback === 'function') {
+					callback.call(_);
+				}
+				
+				return true;
+			}
+		})
+	}
+	predelay = predelay || 0;
+	if(predelay > 0){
+		var h = setTimeout(fn, predelay);
+	} else {
+		fn();
+	}
+}
+
+/*
+ * 卡片入场动画
+ */
+function cardin(x, y, a, dur, predelay, callback, checkstate, mx, my, ma){
 	var _ = this;
 	var X = _.config.x;
 	var Y = _.config.y;
-	var dx = x - X;
-	var dy = y - Y;
+	var dx = typeof x === 'number' ? x - X : 0;
+	var dy = typeof y === 'number' ? y - Y : 0;
 	var step = ani.S(dur || 500);
 	var fx = twe[mx || 'back_out'];
 	var fy = twe[my || 'bounce_out'];
@@ -121,10 +233,15 @@ function cardin(x, y, a, dur, predelay, callback, mx, my, ma){
 			}
 			_.scale(scaleX, 1);
 			if(c >= step){
-				_._in = true;
-				if(_._allok() && typeof callback === 'function'){
-					callback();
+				if(typeof checkstate === 'number'){
+					_._state = checkstate;
+					if(_._allok(checkstate) && typeof callback === 'function'){
+						callback();
+					}
+				} else if(typeof callback === 'function'){
+					callback.call(_);
 				}
+				
 				return true;
 			}
 		})
@@ -135,6 +252,26 @@ function cardin(x, y, a, dur, predelay, callback, mx, my, ma){
 	} else {
 		fn();
 	}
+}
+
+/*
+ * 卡片翻错的动作
+ */
+function cardfall(dur, predelay, callback){
+	var _ = this;
+	_.config.fillStyle = 'rgba(255, 0, 0, .5)';
+	var fn = function(){
+		_.$scaleTo(.8, .8, dur, 'bounce_out', function(){
+			var h = setTimeout(function(){
+				_.config.fillStyle = '#fff';
+				_.$scaleTo(1, 1, dur, 'back_out', function(){
+					_.$turn(0, 180, 300, 0, callback);
+				})
+			}, 1000);
+		});
+	}
+	if(typeof predelay === 'number' && predelay > 0) setTimeout(fn, predelay);
+	else fn();
 }
 
 /*
