@@ -7,7 +7,7 @@ gd.add('level', function open(g){
 	var bg_yellow = rs.$('level_yellow_bg').img;
 	var bg_green = rs.$('level_green_bg').img;
 
-	var levels = [6, 8, 12, 18, 20, 24];
+	var levels = [6, 8, 10, -10, 12, -12];
 
 
 	doc.append(bg);

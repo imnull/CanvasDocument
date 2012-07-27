@@ -22,10 +22,12 @@ gd.add('init', function open(g){
 
 	rl.load({
 		'index_background' : 'images/index_bg.png',
-		'logo' : 'images/logo.png',
+		'logo' : 'images/logo12.png',
 		'commonbg' : 'images/commonbg.png',
 		'play_button' : 'images/play.png',
 		'return_button' : 'images/return.png',
+		'menu_button' : 'images/menu.png',
+		'menu' : 'images/menuList.png',
 		'mode_plain' : 'images/mode_plain.png',
 		'mode_timer' : 'images/mode_timer.png',
 		'mode_endless' : 'images/mode_endless.png',

@@ -25,13 +25,9 @@ var $d = {
 		for(var i = 0, len = this.docs.length; i < len; i++){
 			this.docs[i].clear();
 			this.docs[i].draw();
-			if(typeof this.docs[i].context.unwritable === 'function'){
-				this.docs[i].context.unwritable();
-			}
 		}
 	},
 	open : function(key){
-		ani.clear();
 		this.flush();
 		if(this.$(key, 'open')){
 			this.pagename = key;

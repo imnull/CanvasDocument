@@ -36,7 +36,6 @@ var _ani = {
 	cbs : [],
 	reg : function(callback){
 		var t = (new Date()).getTime();
-		var l = this.cbs.length;
 		this.cbs.push({
 			f : callback,
 			t : t,
@@ -44,16 +43,6 @@ var _ani = {
 			c : 0
 		});
 		this.run();
-		return l;
-	},
-	clear : function(){
-		this.cbs.splice(0, this.cbs.length);
-		this.cbs = [];
-	},
-	removeAt : function(i){
-		if(typeof i === 'number' && i < this.cbs.length){
-			this.cbs.splice(i, 1);
-		}
 	},
 	run : function(){
 		if(!!_ani._handle) return;
@@ -260,10 +249,6 @@ CanvasGenericElement.prototype = {
 		ctx.translate(conf.x * rate, conf.y * rate);
 		this._rotate(ctx);
 		ctx.scale(conf.scaleX, conf.scaleY);
-		if(typeof conf.globalAlpha === 'number'){
-			ctx.globalAlpha = conf.globalAlpha;
-		}
-
 
 		this.path(ctx);
 		this.fill(ctx);
@@ -376,7 +361,7 @@ CanvasGenericElement.prototype = {
 		var dy = y - Y;
 		var step = _ani.S(dur);
 		var _ = this;
-		var fn = function(){ var k = _ani.reg(
+		var fn = function(){ _ani.reg(
 			function(c){
 				_.moveTo(f(c, X, dx, step), f(c, Y, dy, step));
 				if(c >= step){
@@ -386,10 +371,10 @@ CanvasGenericElement.prototype = {
 							var st = setTimeout(function(){
 								clearTimeout(st);
 								st = null;
-								callback.call(_, k);
+								callback.call(_, _);
 							}, delay)
 						} else {
-							callback.call(_, k);
+							callback.call(_, _);
 						}
 					}
 					return true;
@@ -517,7 +502,6 @@ var Panel = _inherit('Panel', CanvasGenericElement, {
 		var H = this.config.height * this.ownerDocument.rate;
 		ctx.beginPath();
 		ctx.rect(W * -.5, H * -.5, W, H);
-		ctx.clip();
 	},
 	size : function(w, h){
 		this.config.width = w;
@@ -529,38 +513,15 @@ var Panel = _inherit('Panel', CanvasGenericElement, {
 		if(!!this.image){
 			var w = this.config.width, h = this.config.height;
 			var x = w * -.5, y = h * -.5;
-			var img = this.image;
-			function draw(img, ic){
-				if(!ic){
-					ctx.drawImage(img, x, y, w, h);
-				} else {
-					var a = 0;
-					if(typeof ic.angle === 'number'){
-						a = ic.angle * (Math.PI / 180);
-					}
-					ctx.rotate(a);
-					switch(ic.op){
-						case 1:
-							var _x = ic.offsetX || 0, _y = ic.offsetY || 0;
-							ctx.drawImage(img, x + _x, y + _y);
-							break;
-						default:
-							var _x = ic.offsetX || 0, _y = ic.offsetY || 0;
-							ctx.drawImage(img
-								, ic.x, ic.y, ic.width, ic.height
-								, x + _x, y + _y, w - _x * 2, h - _y * 2
-								);
-							break;
-					}
-					ctx.rotate(-a);
-				}
-			}
-			if(img instanceof Array){
-				for(var i = 0, len = img.length; i < len; i++){
-					draw(img[i], this.config.imageCoord);
-				}
+			if(!this.config.imageCoord){
+				ctx.drawImage(this.image, x, y, w, h);
 			} else {
-				draw(img, this.config.imageCoord);
+				var ic = this.config.imageCoord;
+				var _x = ic.offsetX || 0, _y = ic.offsetY || 0;
+				ctx.drawImage(this.image
+					, ic.x, ic.y, ic.width, ic.height
+					, x + _x, y + _y, w - _x * 2, h - _y * 2
+					);
 			}
 		}
 	},
@@ -608,7 +569,7 @@ var RoundPanel = _inherit('RoundPanel', Panel, {
 		ctx.lineTo(-W + R, H);
 		ctx.arc(-W + R, H - R, R, pi * .5, pi, false);
 		ctx.closePath();
-		ctx.clip();
+
 	},
 	check : function(x, y){
 		var r = this.ownerDocument.rate, c = this.config;
@@ -866,9 +827,6 @@ function CanvasDocument(id){
 		height : Math.max(cvs.height, 1),
 	}
 	this.rate = 1;
-	this.getImageData = function(x, y, w, h){
-		return this.context.getImageData(x, y, w, h);
-	}
 
 	var _ = this;
 	cvs.addEventListener(MOUSE_DOWN, function(e){
@@ -963,6 +921,7 @@ CanvasDocument.prototype.draw = function(before, after){
 	for(; i < len; i++){
 		this.children[i].draw(this.context);
 	}
+
 	if(typeof after === 'function'){
 		after(this, w, h);
 	}

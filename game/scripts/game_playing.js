@@ -1,17 +1,70 @@
 gd.add('playing', function open(g){
+	g.sence = g.sence || 'fruit';
+	g.cardcount = g.cardcount || 6;
+
 	var doc = g.$('doc');
 	var rs = g.$('resources');
-	var bg = g.$('index_background_dom');
+	var bg = g.$('index_background_dom') || doc.createPanel(320, 200, 640, 400);
 	bg.image = rs.$('sence_' + g.sence + '_bg').img;
 	var img = rs.$('card_' + g.sence).img;
 	var logo = rs.$('logo').img;
 	var prog = doc.createProgressBar();
 	prog.moveTo(320, 380);
 
+	var mask = doc.createPanel(320, 200, 640, 400);
+	mask.config.fillStyle = 'rgba(0,0,0,.5)';
+
+	var menu = doc.createPanel(320, 190, 350, 240);
+	menu.image = rs.$('menu').img;
+	menu.config.fillStyle = 'rgba(0,0,0,0)';
+
+
+	var menubutton = doc.createPanel(620, 20, 25, 30);
+	menubutton.image = rs.$('menu_button').img;
+	menubutton.config.fillStyle = 'rgba(0,0,0,0)';
+
+
+
+	var b1 = doc.createPanel(318, 133, 155, 38);
+	var b2 = doc.createPanel(318, 186, 155, 38);
+	var b3 = doc.createPanel(318, 242, 155, 38);
+	b1.config.fillStyle = 'rgba(0,0,0,0)';
+	b2.config.fillStyle = 'rgba(0,0,0,0)';
+	b3.config.fillStyle = 'rgba(0,0,0,0)';
+
+	b1.mousedown(function(){
+		gd.open('modes');
+	})
+	b2.mousedown(function(){
+		gd.open('level');
+	})
+	b3.mousedown(function(){
+		doc.remove(mask);
+		doc.remove(menu);
+		doc.remove(b1);
+		doc.remove(b2);
+		doc.remove(b3);
+		doc.draw();
+	})
+
+	menubutton.mousedown(function(){
+		doc.append(mask);
+		doc.append(menu);
+		doc.append(b1);
+		doc.append(b2);
+		doc.append(b3);
+		doc.draw();
+	});
+
 	doc.append(bg);
 
+	var rotate = false;
+	if(g.cardcount < 0){
+		g.cardcount = -g.cardcount;
+		rotate = true;
+	}
 	var map = cardMaps[g.sence].slice(0);
-	var c = g.cardcount / 2;
+	var c = Math.abs(g.cardcount) / 2;
 	var H = fitMul(g.cardcount);
 	var s = cardSize(H, g.cardcount / H, doc);
 	var waitms = c * 1000 * 1;
@@ -28,11 +81,15 @@ gd.add('playing', function open(g){
 		card.config.fillStyle = 
 		card2.config.fillStyle = 'rgba(255,255,255,1)';
 		card._coord = 
+		card.config.imageCoord = { x : _map[0], y : _map[1], width : 180, height : 240 };
 		card2._coord = 
-		card.config.imageCoord = 
 		card2.config.imageCoord = { x : _map[0], y : _map[1], width : 180, height : 240 }
 		card.config.imageCoord.offsetX = s.width * .9 * (1 - 1 / 1.3) * .5;
 		card2.config.imageCoord.offsetX = s.width * .9 * (1 - 1 / 1.3) * .5;
+		if(rotate){
+			card.config.imageCoord.angle = 90 * (Math.floor(100 * Math.random()) % 4);
+			card2.config.imageCoord.angle = 90 * (Math.floor(100 * Math.random()) % 4);
+		}
 		card._back = card2._back = logo;
 		card._face = card2._face = img;
 		cards.push(card);
@@ -48,7 +105,7 @@ gd.add('playing', function open(g){
 		map.splice(idx, 1);
 	}
 	
-	arrayChaos(cards);
+	arrayChaos(cards, rotate);
 
 	each(cards, function(card, i){
 		var x = (i % H) * s.width + s.left;
@@ -80,6 +137,9 @@ gd.add('playing', function open(g){
 	var pairA = null;
 	var pairB = null;
 	function startGame(){
+
+		doc.append(menubutton);
+
 		each(cards, function(card){
 			card.evtkey = card.mousedown(manturncard);
 		})
@@ -296,9 +356,9 @@ function cardSize(H, V, doc){
 	}
 }
 
-function arrayChaos(arr){
+function arrayChaos(arr, rotate){
 	arr.sort(function(a, b){
-		return Math.random() >= 0.5;
+		return 0.5 - Math.random();
 	})
 }
 
