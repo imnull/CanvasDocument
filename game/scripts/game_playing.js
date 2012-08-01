@@ -11,6 +11,40 @@ gd.add('playing', function open(g){
 	var prog = doc.createProgressBar();
 	prog.moveTo(320, 380);
 
+	var scoreBar = doc.createPanel(300, 15, 600, 24);
+	scoreBar.config.textAlign = 'left';
+	scoreBar.config.fillStyle = 'rgba(0,0,0,0)';
+	scoreBar.config.textColor = '#ffffff';
+	scoreBar.config.font = '14px 黑体';
+	scoreBar._score = 0;
+	scoreBar._next = 1;
+	scoreBar._retry = 5;
+	scoreBar.showScore = function(){
+		var str = [];
+		str.push('  ');
+		str.push('得分: ');
+		str.push(this._score);
+		str.push('    ');
+		str.push('累加: ');
+		str.push(this._next);
+		str.push('    ');
+		str.push('重试: ');
+		str.push(this._retry);
+		scoreBar.content(str.join(''));
+	}
+	scoreBar.wrong = function(){
+		this._next = 1;
+		this._retry = Math.max(0, this._retry - 1);
+		this.showScore();
+	}
+	scoreBar.right = function(){
+		this._score += this._next;
+		this._next += 1;
+		this._retry = Math.min(5, this._retry + 1);
+		this.showScore();
+	}
+
+
 	var mask = doc.createPanel(320, 200, 640, 400);
 	mask.config.fillStyle = 'rgba(0,0,0,.5)';
 
@@ -90,6 +124,8 @@ gd.add('playing', function open(g){
 			card.config.imageCoord.angle = 90 * (Math.floor(100 * Math.random()) % 4);
 			card2.config.imageCoord.angle = 90 * (Math.floor(100 * Math.random()) % 4);
 		}
+		card.config.lineWidth = card2.config.lineWidth = 5;
+		card.config.strokeStyle = card2.config.strokeStyle = '#fff';
 		card._back = card2._back = logo;
 		card._face = card2._face = img;
 		cards.push(card);
@@ -100,6 +136,7 @@ gd.add('playing', function open(g){
 		card.$in = card2.$in = cardin;
 		card.$fall = card2.$fall = cardfall;
 		card.$turn = card2.$turn = cardturn;
+		card.$out2 = card2.$out2 = cardfailout;
 		card.id = card2.id = i;
 
 		map.splice(idx, 1);
@@ -138,6 +175,11 @@ gd.add('playing', function open(g){
 	var pairB = null;
 	function startGame(){
 
+		doc.remove(g.$('return'));
+		
+		scoreBar.showScore();
+
+		doc.append(scoreBar);
 		doc.append(menubutton);
 
 		each(cards, function(card){
@@ -150,7 +192,12 @@ gd.add('playing', function open(g){
 			pairA.$in(0, -pairA.config.height, 0, 500, 0, function(){
 				doc.remove(this);
 				pairA = null;
-				//if(!cards.length) alert(0)
+				//
+
+				scoreBar.right();
+				if(cards.length < 1){
+					success();
+				}
 			});
 			pairB.$in(0, -pairB.config.height, 0, 500, 0, function(){
 				doc.remove(this);
@@ -169,14 +216,19 @@ gd.add('playing', function open(g){
 				okA = true;
 				if(okA && okB){
 					pairA = pairB = null;
+					scoreBar.wrong();
+					if(scoreBar._retry < 1) gameover();
 				}
 			});
 			pairB.$fall(800, 0, function(){
 				okB = true;
 				if(okA && okB){
 					pairA = pairB = null;
+					scoreBar.wrong();
+					if(scoreBar._retry < 1) gameover();
 				}
 			});
+
 		}
 	}
 
@@ -195,6 +247,22 @@ gd.add('playing', function open(g){
 				pairA.state = pairB.state = 5;
 				compair();
 			}
+		});
+	}
+
+	function success(){
+
+	}
+
+	function gameover(){
+		each(cards, function(card, i){
+			card.removeEvent('mousedown', card.evtkey);
+			card.config.fillStyle = 'rgba(255, 0, 0, .5)'
+			card.$turn(180, 360, 500, 100 * i, function(){
+				card.$out2(1000, 0, function(){
+
+				})
+			});
 		});
 	}
 
@@ -335,6 +403,33 @@ function cardfall(dur, predelay, callback){
 }
 
 /*
+ * 游戏失败时卡片退场动作
+ */
+function cardfailout(dur, predelay, callback){
+	this.config.fillStyle = 'rgba(255, 0, 0, .5)';
+	var hTarget = 600;
+	var x = this.config.x;
+	var y = this.config.y;
+	var _ = this;
+	var step = ani.S(dur);
+	var fn = function(){
+		ani.reg(function(s){
+			var r = s / step;
+			_.moveTo(x, y + hTarget * r);
+			_.rotate(s * 20);
+			if(s > step){
+				if(typeof callback === 'function'){
+					callback(_);
+				}
+				return true;
+			}
+		})
+	}
+	if(typeof predelay === 'number' && predelay > 0) setTimeout(fn, predelay);
+	else fn();
+}
+
+/*
  * 根据横纵数量适配卡片位置
  */
 function cardSize(H, V, doc){
@@ -356,6 +451,9 @@ function cardSize(H, V, doc){
 	}
 }
 
+/*
+ * 数组乱序
+ */
 function arrayChaos(arr, rotate){
 	arr.sort(function(a, b){
 		return 0.5 - Math.random();
