@@ -30,17 +30,32 @@ gd.add('sence', function open(g){
 	sence.config.fillStyle = 'rgba(0,0,0,0)';
 
 	g.sence = sences[logo_index];
+	var animation_run = false;
 	left.mousedown(function(){
-		logo_index = (logo_index + logos.length - 1) % logos.length;
-		sence.image = logos[logo_index];
-		g.sence = sences[logo_index];
-		doc.draw();
+		if(animation_run) return;
+		animation_run = true;
+		sence.$moveTo(w + sence.config.width, sence.config.y, 300, 'quart_in', function(){
+			logo_index = (logo_index + logos.length - 1) % logos.length;
+			sence.image = logos[logo_index];
+			g.sence = sences[logo_index];
+			sence.moveTo(-sence.config.width, sence.config.y);
+			sence.$moveTo(w * .5, sence.config.y, 200, 'quart_out', function(){
+				animation_run = false;
+			})
+		})
 	})
 	right.mousedown(function(){
-		logo_index = (logo_index + 1) % logos.length;
-		sence.image = logos[logo_index];
-		g.sence = sences[logo_index];
-		doc.draw();
+		if(animation_run) return;
+		animation_run = true;
+		sence.$moveTo(-sence.config.width, sence.config.y, 300, 'quart_in', function(){
+			logo_index = (logo_index + 1) % logos.length;
+			sence.image = logos[logo_index];
+			g.sence = sences[logo_index];
+			sence.moveTo(w + sence.config.width, sence.config.y);
+			sence.$moveTo(w * .5, sence.config.y, 200, 'quart_out', function(){
+				animation_run = false;
+			})
+		})
 	})
 	sence.mousedown(function(){
 		gd.open('level');
