@@ -24,7 +24,7 @@ gd.add('welcome', function open(g){
 
 	var run_ani = false;
 	ani.reg(function(t){
-		var s = Math.sin(((t * 5) % 360) * (Math.PI / 180)) * 30;
+		var s = Math.sin(((t * 5) % 360) * (Math.PI / 180)) * 20;
 		board.rotate(s, -0.1, -0.9);
 		return run_ani;
 	})
