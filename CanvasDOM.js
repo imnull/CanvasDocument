@@ -1,9 +1,34 @@
+/*
+ 应一小撮人的要求，我开始对这个文档做一点注释。
+ 首先声明一下：这段代码是来自HTML5梦工厂的院长——也就是我——写的。
+ 您可以随意使用，包括商业使用。但是，请保留我——也就是院长——的版权声明和HTML5梦工厂的有关标记。
+ 否则⋯⋯
+ 否则我也没什么办法，只能最大程度的鄙视你。
+ 我的邮箱：mk31415926535@gmail.com
+ */
+
+/*
+ 做大闭包是我的习惯
+ 通过大闭包，我可以象传统OOP一样去封装一些私有的变量或函数
+ 此外，都说参数穿进去的window对象会访问快一些呢。
+ 此外，我感觉以w穿进去的window对象会少写好多字呢。
+ */
 (function(w){
 
+/*
+ * 在全局判定几个事件函数
+ * in 方法可以作为一种属性判定来使用（hasProperty），比 !!obj[property] 这种方式要不那么山寨。
+ */
 w.MOUSE_DOWN = 'ontouchstart' in document ? 'touchstart' : 'mousedown';
 w.MOUSE_UP	 = 'ontouchend' in document ? 'touchend' : 'mouseup';
 w.MOUSE_MOVE = 'ontouchmove' in document ? 'touchmove' : 'mousemove';
 
+/*
+ * 这是个与事件相关的一个私有的函数库
+ * 包含两个方法
+ ** get 获取到事件
+ ** pos 获取鼠标相对元素的位置
+ */
 var _evt = {
 	get : function (e) {
 		return (e = e || window.event).touches && e.touches.length ? e.touches[0] : e;
@@ -27,6 +52,10 @@ var _evt = {
 	}
 }
 
+ /*
+  * 一个简单的 基于统一frame管理的动画引擎
+  * 该引擎与后面的CanvasDocument会有一些耦合
+  */
 var _ani = {
 	FPS : 50,
 	RATE : 1,
@@ -296,7 +325,7 @@ CanvasGenericElement.prototype = {
 	content : function(str, color, font){
 		this.config.text = str;
 		if(!!font) this.config.font = font;
-		this.config.textColor = color || '#000000';
+		if(!!color) this.config.textColor = color;
 		return this;
 	},
 	fill : function(ctx){
@@ -330,13 +359,13 @@ CanvasGenericElement.prototype = {
 
 		var w, h;
 		try {
-			w = ctx.measureText(this.config.text).width;
-			h = ctx.measureText('啊').width;
+			w = ctx.measureText(this.config.text).width * -.5;
+			h = ctx.measureText('啊').width * 0.20;
 		} catch(ex){
 			w = h = 0;
 		}
 
-		ctx.fillText(this.config.text, w * -.5, h * 0.20);
+		ctx.fillText(this.config.text, w, h);
 
 		return this;
 	},
@@ -527,6 +556,8 @@ var Panel = _inherit('Panel', CanvasGenericElement, {
 	fill : function(ctx){
 		cp.fill.call(this, ctx);
 		if(!!this.image){
+			ctx.save();
+			ctx.clip();
 			var w = this.config.width, h = this.config.height;
 			var x = w * -.5, y = h * -.5;
 			var img = this.image;
@@ -562,6 +593,7 @@ var Panel = _inherit('Panel', CanvasGenericElement, {
 			} else {
 				draw(img, this.config.imageCoord);
 			}
+			ctx.restore();
 		}
 	},
 	_rotate : function(ctx){
@@ -589,6 +621,34 @@ var Panel = _inherit('Panel', CanvasGenericElement, {
 			&& y >= Y - H * .5
 			&& y <= Y + H * .5;
 		return b;
+	},
+	text : function(ctx){
+		if(!this.config.text) return;
+		ctx.font = this.config.font;
+		ctx.fillStyle = this.config.textColor || '#000000';
+		var w, h;
+		try {
+			var align = this.config.textAlign || 'center';
+			switch(align){
+				case 'center':
+					w = ctx.measureText(this.config.text).width * -.5;
+					break;
+				case 'left':
+					w = this.config.width * -.5;
+					break;
+				case 'right':
+					w = this.config.width * .5 - ctx.measureText(this.config.text).width;
+					break;
+			}
+			h = ctx.measureText('M').width * 0.450;
+		} catch(ex){
+			w = h = 0;
+		}
+
+		ctx.fillText(this.config.text, w, h);
+
+		return this;
+		
 	}
 }, { config : { width : 100, height : 100, rotateX : 0, rotateY : 0 } });
 
@@ -608,7 +668,6 @@ var RoundPanel = _inherit('RoundPanel', Panel, {
 		ctx.lineTo(-W + R, H);
 		ctx.arc(-W + R, H - R, R, pi * .5, pi, false);
 		ctx.closePath();
-		ctx.clip();
 	},
 	check : function(x, y){
 		var r = this.ownerDocument.rate, c = this.config;
