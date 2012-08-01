@@ -7,18 +7,17 @@ gd.add('level', function open(g){
 	var bg_yellow = rs.$('level_yellow_bg').img;
 	var bg_green = rs.$('level_green_bg').img;
 
-	var levels = [6, 8, 10, -10, 12, -12];
 
 
 	doc.append(bg);
 
 
-	for(var i = 0, len = levels.length, len2 = len * .5; i < len; i++){
+	for(var i = 0, len = g.levels.length, len2 = len * .5; i < len; i++){
 		var panel = doc.createPanel((i % len2) * 150 + 170, Math.floor(i / len2) * 180 + 110, 120, 150);
 		panel.config.fillStyle = 'rgba(0,0,0,0)';
 		panel.config.strokeStyle = '#000';
 		panel.image = bg_yellow;
-		panel._value = levels[i];
+		panel._value = g.levels[i];
 		panel.mousedown(function(){
 			g.cardcount = this._value;
 			gd.open('playing')

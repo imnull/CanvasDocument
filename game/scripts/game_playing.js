@@ -4,6 +4,7 @@ gd.add('playing', function open(g){
 
 	var doc = g.$('doc');
 	var rs = g.$('resources');
+	var W = doc.origin.width, H = doc.origin.height;
 	var bg = g.$('index_background_dom') || doc.createPanel(320, 200, 640, 400);
 	bg.image = rs.$('sence_' + g.sence + '_bg').img;
 	var img = rs.$('card_' + g.sence).img;
@@ -70,7 +71,7 @@ gd.add('playing', function open(g){
 		gd.open('modes');
 	})
 	b2.mousedown(function(){
-		gd.open('level');
+		gd.open('playing');
 	})
 	b3.mousedown(function(){
 		doc.remove(mask);
@@ -93,14 +94,15 @@ gd.add('playing', function open(g){
 	doc.append(bg);
 
 	var rotate = false;
-	if(g.cardcount < 0){
-		g.cardcount = -g.cardcount;
+	var cardcount = g.cardcount;
+	if(cardcount < 0){
+		cardcount = -cardcount;
 		rotate = true;
 	}
 	var map = cardMaps[g.sence].slice(0);
-	var c = Math.abs(g.cardcount) / 2;
-	var H = fitMul(g.cardcount);
-	var s = cardSize(H, g.cardcount / H, doc);
+	var c = cardcount / 2;
+	var H = fitMul(cardcount);
+	var s = cardSize(H, cardcount / H, doc);
 	var waitms = c * 1000 * 1;
 
 	var cards = [];
@@ -192,12 +194,12 @@ gd.add('playing', function open(g){
 			pairA.$in(0, -pairA.config.height, 0, 500, 0, function(){
 				doc.remove(this);
 				pairA = null;
-				//
-
 				scoreBar.right();
+
 				if(cards.length < 1){
 					success();
 				}
+
 			});
 			pairB.$in(0, -pairB.config.height, 0, 500, 0, function(){
 				doc.remove(this);
@@ -251,7 +253,46 @@ gd.add('playing', function open(g){
 	}
 
 	function success(){
+		doc.append(mask);
+		var w = doc.origin.width, h = doc.origin.height;
+		var panel = doc.createPanel(w * .5, h * .5, 300, 200);
+		panel.config.fillStyle = 'rgba(0,0,0,0)';
+		panel.image = rs.$('result_border').img;
+		doc.append(panel);
 
+		var c = Math.abs(g.cardcount) / 2;
+		var result = getStar(c, scoreBar._score);
+		for(var i = 0; i < 3; i++){
+			var star = doc.createPanel(50 * (i - 1) + w * .5, 100, 42, 42);
+			star.config.fillStyle = 'rgba(0,0,0,0)';
+			if(i < result){
+				star.image = rs.$('result_star_light').img;
+			} else {
+				star.image = rs.$('result_star_gray').img;
+			}
+			doc.append(star);
+		}
+
+		var retry = doc.createPanel(w * .5 - 60, h * .5, 72, 72);
+		retry.config.fillStyle = 'rgba(0,0,0,0)';
+		retry.image = rs.$('result_retry').img;
+		retry.mousedown(function(){
+			gd.open('playing');
+		});
+		doc.append(retry);
+
+		var next = doc.createPanel(w * .5 + 60, h * .5, 72, 72);
+		next.config.fillStyle = 'rgba(0,0,0,0)';
+		next.image = rs.$('result_next').img;
+		next.mousedown(function(){
+			var index = g.levels.indexOf(g.cardcount);
+			g.cardcount = g.levels[(index + 1) % g.levels.length];
+			gd.open('playing');
+		});
+		doc.append(next);
+
+
+		doc.draw();
 	}
 
 	function gameover(){
@@ -259,8 +300,13 @@ gd.add('playing', function open(g){
 			card.removeEvent('mousedown', card.evtkey);
 			card.config.fillStyle = 'rgba(255, 0, 0, .5)'
 			card.$turn(180, 360, 500, 100 * i, function(){
-				card.$out2(1000, 0, function(){
-
+				card.$out2(1000, 800, function(){
+					doc.remove(card);
+					var index = cards.indexOf(card);
+					cards.splice(index, 1);
+					if(cards.length < 1){
+						gd.open('level')
+					}
 				})
 			});
 		});
@@ -268,13 +314,43 @@ gd.add('playing', function open(g){
 
 	var w = fitMul(g.cardcount);
 
-	doc.append(g.$('return'));
+	//doc.append(g.$('return'));
 	doc.draw();
 
 }, function close(g){
 	console.log('game.level.closed.')
 	console.log(g)
 });
+
+/*
+ * 差1的数列相加
+ */
+function scoreTotal(c){
+	var r = 0;
+	for(var i = 1; i <= c; i++){
+		r += i;
+	}
+	return r;
+}
+
+/*
+ * 获取星数
+ */
+function getStar(c, score){
+	var s3 = .7;
+	var s2 = .3;
+	var s1 = .15;
+	var r = scoreTotal(c);
+	if(score >= s3 * r){
+		return 3;
+	} else if(score >= s2 * r){
+		return 2;
+	} else if(score >= s1 * r){
+		return 1;
+	} else {
+		return 0;
+	}
+}
 
 function each(arr, callback){
 	var i = 0, len = arr.length;

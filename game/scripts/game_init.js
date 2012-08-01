@@ -1,4 +1,7 @@
 gd.add('init', function open(g){
+
+	g.levels = [6, 8, 10, -10, 12, -12];
+
 	var doc = new CanvasDocument('test');
 	var bar = doc.createProgressBar();
 	doc.append(bar);
@@ -44,6 +47,11 @@ gd.add('init', function open(g){
 		'card_cartoon' : 'images/card_cartoon.png',
 		'card_letter' : 'images/card_letter.png',
 		'card_fruit' : 'images/card_fruit.png',
+		'result_border' : 'images/result_outer.png',
+		'result_star_gray' : 'images/star_grey.png',
+		'result_star_light' : 'images/star_light.png',
+		'result_retry' : 'images/result_retry.png',
+		'result_next' : 'images/result_next.png',
 	})
 
 
@@ -51,10 +59,17 @@ gd.add('init', function open(g){
 	g.add('progressBar', bar);
 	g.add('resources', rl);
 
-	//doc.fit(window);
-	//window.addEventListener('resize', function(){
-	//	doc.fit(window);
-	//})
+	doc.fit(window);
+	doc.draw();
+	window.addEventListener('resize', function(){
+		doc.fit(window);
+		doc.draw();
+	})
+	window.addEventListener('orientationchange', function () {
+		window.scrollTo(0, 1);
+		doc.fit(window);
+		doc.draw();
+	})
 }, function close(g){
 	g.get('progressBar').set(0);
 	gd.open('welcome');

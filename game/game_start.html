@@ -2,8 +2,19 @@
 <html>
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-
-	<title></title>
+	<!-- 去掉URL和按钮栏 -->
+	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<!-- 更改手机的状态栏显示 -->
+	<!-- meta name="apple-mobile-web-app-status-bar-style" content="default" / -->
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+	<!-- 防止移动端缩放 -->
+	<!-- meta name="viewport" content="user-scalable=no, width=device-width" / --> 
+	<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1, user-scalable=0"/>
+	<!-- 针对竖屏固定的游戏模式：-->
+	<!-- <meta name="oupengmobile" content="fullscreen,portrait,game" /> -->
+	<!-- 针对横屏固定的游戏模式：-->
+	<meta name="oupengmobile" content="fullscreen,landscape,game" />
+	<title>智力对对碰 － Storm小组 [ StormKids ] - HTML5梦工厂</title>
 	<style type="text/css">
 	body{ margin:0px; }
 	canvas{ background-color: #eee; display: block; margin: 0 auto; }
@@ -25,7 +36,10 @@
 <canvas id="test" width="640" height="400"></canvas>
 
 <script type="text/javascript">
-
+window.scrollTo(0, 1);
+document.ontouchmove = function(e){
+	e.preventDefault();
+}
 gd.open('init');
 
 
